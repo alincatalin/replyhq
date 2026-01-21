@@ -3,6 +3,15 @@ plugins {
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.androidLint)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.sqldelight)
+}
+
+sqldelight {
+    databases {
+        create("ChatDatabase") {
+            packageName.set("dev.replyhq.sdk.data.local")
+        }
+    }
 }
 
 kotlin {
