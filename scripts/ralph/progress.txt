@@ -6,4 +6,21 @@ Feature: ReplyHQ SDK v1.0.0
 - This is a Kotlin Multiplatform project with composeApp (Android), iosApp, and sdk modules
 - Use Jetpack Compose for Android UI, Compose Multiplatform for shared UI
 - Follow existing Gradle conventions in build.gradle.kts files
+- Dependencies are defined in gradle/libs.versions.toml with version catalog
+- SDK dependencies: kotlinx-coroutines, kotlinx-serialization, ktor-client, sqldelight, kotlinx-datetime
+- Platform actuals: use ktor-client-okhttp (Android), ktor-client-darwin (iOS), sqldelight-android-driver/native-driver
+---
+
+## Wed Jan 21 2026 - SDK-001
+Thread: https://ampcode.com/threads/T-019be18a-e472-7442-8d73-cefb3d561f6a
+- Implemented project scaffolding and Gradle setup for the SDK module
+- Added all core KMP dependencies to libs.versions.toml and sdk/build.gradle.kts
+- Created package structure: dev.replyhq.sdk with config/, ui/, data/, core/, platform/ directories
+- Moved Platform expect/actual files to platform/ subdirectory
+- Files changed: gradle/libs.versions.toml, sdk/build.gradle.kts, Platform.kt files
+- **Learnings for future iterations:**
+  - Use serialization plugin: `alias(libs.plugins.kotlinSerialization)` in build.gradle.kts
+  - Android uses ktor-client-okhttp engine, iOS uses ktor-client-darwin engine
+  - SQLDelight uses android-driver and native-driver for platform-specific implementations
+  - Build with `./gradlew :sdk:build` to verify all targets compile
 ---

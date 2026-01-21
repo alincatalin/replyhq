@@ -8,7 +8,7 @@
       "id": "SDK-001",
       "title": "Project scaffolding & Gradle setup",
       "description": "Set up the KMP SDK module structure with Gradle configuration.\n\n**What to do:**\n- Create sdk module with commonMain, androidMain, iosMain source sets\n- Configure Gradle with KMP plugin, targets (Android SDK 28+, iOS 15+)\n- Add core dependencies: Kotlin Stdlib, Kotlinx Coroutines, Kotlinx Serialization, Ktor Client, SQLDelight, Kotlinx DateTime\n- Set up package structure: dev.replyhq.sdk with config/, ui/, data/, core/, platform/ directories\n\n**Acceptance criteria:**\n- ./gradlew :sdk:build compiles without errors\n- Source sets are properly configured for common, Android, and iOS",
-      "passes": false,
+      "passes": true,
       "dependsOn": []
     },
     {
