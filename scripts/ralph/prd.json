@@ -22,7 +22,7 @@
       "id": "SDK-003",
       "title": "Configuration data classes",
       "description": "Create all configuration container classes.\n\n**What to do:**\n- Create config/ChatConfig.kt - main config container\n- Create config/ChatUser.kt - user identification (id, name, email, attributes)\n- Create config/ChatTheme.kt - appearance (accentColor, bubblePosition, darkMode)\n- Create config/ChatBehavior.kt - runtime behavior (showBubble, enableOfflineQueue, maxOfflineMessages, attachmentsEnabled, typingIndicators)\n- Create config/NetworkConfig.kt - timeout, retryPolicy, maxRetries\n\n**Acceptance criteria:**\n- All data classes compile\n- Default values match PRD spec\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-001"]
     },
     {

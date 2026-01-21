@@ -44,3 +44,19 @@ Thread: https://ampcode.com/threads/T-019be18f-e299-7709-84b9-8e96d4d74423
   - For Android connectivity: use `ConnectivityManager.NetworkCallback` for modern API
   - expect/actual classes show Beta warnings; can use `-Xexpect-actual-classes` flag to suppress
 ---
+
+## Wed Jan 21 2026 - SDK-003
+Thread: https://ampcode.com/threads/T-019be193-44d0-7218-a417-845bc2f19d52
+- Implemented all configuration data classes for the SDK
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatConfig.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatUser.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatTheme.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatBehavior.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/NetworkConfig.kt
+- **Learnings for future iterations:**
+  - ChatUser uses @Serializable for API transmission, other config classes are app-side only
+  - Use Long for color values (e.g., 0xFF007AFF) for cross-platform compatibility
+  - kotlin.time.Duration works well for timeout configuration with Duration.Companion extensions
+  - Enums for DarkMode (LIGHT/DARK/SYSTEM), BubblePosition, and RetryPolicy provide type safety
+---
