@@ -29,7 +29,7 @@
       "id": "SDK-004",
       "title": "Data models - Conversation & Message",
       "description": "Create core data model entities.\n\n**What to do:**\n- Create data/models/Conversation.kt with id, visitorId, createdAt, updatedAt, metadata\n- Create data/models/Message.kt with id, localId, conversationId, content, senderType (USER/AGENT/SYSTEM), sentAt, status (QUEUED/SENDING/SENT/DELIVERED/READ/FAILED)\n- Create data/models/DeviceContext.kt with platform, osVersion, appVersion, deviceModel, locale, timezone\n\n**Acceptance criteria:**\n- Models use kotlinx.serialization annotations\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-001"]
     },
     {

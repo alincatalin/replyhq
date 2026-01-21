@@ -60,3 +60,18 @@ Thread: https://ampcode.com/threads/T-019be193-44d0-7218-a417-845bc2f19d52
   - kotlin.time.Duration works well for timeout configuration with Duration.Companion extensions
   - Enums for DarkMode (LIGHT/DARK/SYSTEM), BubblePosition, and RetryPolicy provide type safety
 ---
+
+## Wed Jan 21 2026 - SDK-004
+Thread: https://ampcode.com/threads/T-019be195-1c86-72f2-a3b2-2b7303c314ac
+- Implemented core data models: Conversation, Message, and DeviceContext
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/models/Conversation.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/models/Message.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/models/DeviceContext.kt
+- **Learnings for future iterations:**
+  - Use @SerialName for API field naming (snake_case) while keeping Kotlin idiomatic camelCase
+  - kotlinx.datetime.Instant is the proper type for timestamps - works cross-platform
+  - MessageStatus enum is local-only (no @SerialName needed) for UI state tracking
+  - ConversationStatus and SenderType need @SerialName to match API contract
+  - Message.id is nullable (null when pending/unsent), localId is always present
+---
