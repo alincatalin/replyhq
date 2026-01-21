@@ -1,3 +1,3 @@
 package dev.replyhq.sdk.platform
 
-actual fun platform() = "iOS"
+actual val platformName: String = "ios"

@@ -1,3 +1,3 @@
 package dev.replyhq.sdk.platform
 
-expect fun platform(): String
+expect val platformName: String
