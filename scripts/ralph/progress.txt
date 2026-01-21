@@ -1,0 +1,9 @@
+# Ralph Progress Log
+Started: Wed Jan 21 2026
+Feature: ReplyHQ SDK v1.0.0
+
+## Codebase Patterns
+- This is a Kotlin Multiplatform project with composeApp (Android), iosApp, and sdk modules
+- Use Jetpack Compose for Android UI, Compose Multiplatform for shared UI
+- Follow existing Gradle conventions in build.gradle.kts files
+---
