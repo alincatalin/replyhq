@@ -9,6 +9,7 @@ Feature: ReplyHQ SDK v1.0.0
 - Dependencies are defined in gradle/libs.versions.toml with version catalog
 - SDK dependencies: kotlinx-coroutines, kotlinx-serialization, ktor-client, sqldelight, kotlinx-datetime
 - Platform actuals: use ktor-client-okhttp (Android), ktor-client-darwin (iOS), sqldelight-android-driver/native-driver
+- SDK permissions must be declared in sdk/src/androidMain/AndroidManifest.xml (merged with app manifest)
 ---
 
 ## Wed Jan 21 2026 - SDK-001
@@ -23,4 +24,23 @@ Thread: https://ampcode.com/threads/T-019be18a-e472-7442-8d73-cefb3d561f6a
   - Android uses ktor-client-okhttp engine, iOS uses ktor-client-darwin engine
   - SQLDelight uses android-driver and native-driver for platform-specific implementations
   - Build with `./gradlew :sdk:build` to verify all targets compile
+---
+
+## Wed Jan 21 2026 - SDK-002
+Thread: https://ampcode.com/threads/T-019be18f-e299-7709-84b9-8e96d4d74423
+- Implemented platform expect/actual declarations for Platform, Connectivity, PushNotifications, and Preferences
+- Files changed:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/Platform.kt (updated to use expect val)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/Connectivity.kt (new)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/PushNotifications.kt (new)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/Preferences.kt (new)
+  - sdk/src/androidMain/kotlin/dev/replyhq/sdk/platform/* (actual implementations)
+  - sdk/src/iosMain/kotlin/dev/replyhq/sdk/platform/* (actual implementations)
+  - sdk/src/androidMain/AndroidManifest.xml (added ACCESS_NETWORK_STATE and INTERNET permissions)
+- **Learnings for future iterations:**
+  - SDK libraries need to declare permissions in their own AndroidManifest.xml - they get merged with app manifest
+  - For iOS network monitoring: use `nw_path_monitor` from platform.Network
+  - For iOS preferences: use `NSUserDefaults.standardUserDefaults`
+  - For Android connectivity: use `ConnectivityManager.NetworkCallback` for modern API
+  - expect/actual classes show Beta warnings; can use `-Xexpect-actual-classes` flag to suppress
 ---
