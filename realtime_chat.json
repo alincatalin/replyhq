@@ -1,0 +1,280 @@
+{
+  "feature": "Socket.IO Realtime Chat Migration",
+  "description": "Migrate from raw ws WebSocket to Socket.IO for a robust, scalable realtime chat system with proper namespaces, SDK protocol adapter, and admin dashboard integration.",
+  "prd": "realtime_chat.md",
+  "tasks": [
+    {
+      "id": "socketio-1",
+      "title": "Install Socket.IO dependencies",
+      "phase": 1,
+      "dependsOn": [],
+      "description": "Install Socket.IO and Redis adapter packages in the backend.\n\n**What to do:**\n- Run: `pnpm add socket.io @socket.io/redis-adapter`\n- Run: `pnpm add -D @types/socket.io`\n- Verify packages are added to package.json\n\n**Files:**\n- backend/package.json\n\n**Acceptance criteria:**\n- socket.io, @socket.io/redis-adapter in dependencies\n- @types/socket.io in devDependencies\n- pnpm install completes without errors\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-2",
+      "title": "Create Socket.IO types and interfaces",
+      "phase": 1,
+      "dependsOn": ["socketio-1"],
+      "description": "Create TypeScript types for Socket.IO client/admin sockets and events.\n\n**What to do:**\n- Create types/socket.ts with:\n  - ClientSocket interface extending Socket with data: { appId, deviceId, connectionId, conversationId? }\n  - AdminSocket interface extending Socket with data: { appId, connectionId, subscribedConversations }\n  - ServerToClientEvents interface (connected, message:new, agent:typing, conversation:joined, server:shutdown, error)\n  - ClientToServerEvents interface (conversation:join, conversation:leave, typing:start, typing:stop, ping)\n  - AdminToServerEvents interface (app:subscribe, conversation:join, message:send, typing:start, typing:stop, sessions:list)\n  - ServerToAdminEvents interface (all client events + session:connect, session:disconnect, presence:change, user:typing)\n\n**Files:**\n- backend/src/types/socket.ts (new file)\n\n**Acceptance criteria:**\n- All interfaces properly typed\n- Exports available for use in socketService\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-3",
+      "title": "Create Socket.IO service skeleton",
+      "phase": 1,
+      "dependsOn": ["socketio-2"],
+      "description": "Create the main Socket.IO service with server initialization and namespace setup.\n\n**What to do:**\n- Create socketService.ts with:\n  - initSocketIO(server: HttpServer) function\n  - Socket.IO server config: path '/v1/socket.io', cors, pingInterval 25000, pingTimeout 60000, transports ['websocket']\n  - Redis adapter integration (conditional on isRedisReady())\n  - Client namespace '/client' creation\n  - Admin namespace '/admin' creation\n  - Export io, clientNs, adminNs references\n  - gracefulShutdown() function that emits server:shutdown and closes connections\n\n**Files:**\n- backend/src/services/socketService.ts (new file)\n\n**Acceptance criteria:**\n- Server initializes without errors\n- Redis adapter used when Redis available\n- Both namespaces created\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-4",
+      "title": "Implement client namespace authentication middleware",
+      "phase": 1,
+      "dependsOn": ["socketio-3"],
+      "description": "Add authentication middleware to the /client namespace.\n\n**What to do:**\n- Add ns.use() middleware that:\n  - Extracts app_id, device_id, api_key from socket.handshake.auth\n  - Validates all three are present (error: MISSING_PARAMS)\n  - Queries prisma.app.findUnique to validate app exists\n  - Checks app.apiKey matches provided api_key (error: INVALID_CREDENTIALS)\n  - Sets socket.data with appId, deviceId, connectionId (from generateConnectionId)\n  - Calls next() on success, next(new Error(code)) on failure\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Invalid credentials rejected before connection event\n- Valid credentials populate socket.data\n- Error codes match: MISSING_PARAMS, INVALID_CREDENTIALS, AUTH_ERROR\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-5",
+      "title": "Implement client connection handler",
+      "phase": 1,
+      "dependsOn": ["socketio-4"],
+      "description": "Handle client connections in the /client namespace.\n\n**What to do:**\n- On 'connection' event:\n  - Log connection with connectionId, appId, deviceId\n  - Emit 'connected' event with { connection_id, server_time }\n  - Register event handlers for: conversation:join, conversation:leave, typing:start, typing:stop, ping, disconnect\n  - On disconnect: log reason, clean up\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Connection logged with identifiers\n- 'connected' event emitted immediately\n- All event handlers registered\n- Disconnect properly logged\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-6",
+      "title": "Implement conversation:join handler with rooms",
+      "phase": 1,
+      "dependsOn": ["socketio-5"],
+      "description": "Implement conversation subscription using Socket.IO rooms.\n\n**What to do:**\n- handleConversationJoin(socket, conversationId, ack) function:\n  - Validate conversation exists and belongs to appId + deviceId via Prisma\n  - If not found: ack({ success: false, error: 'CONVERSATION_NOT_FOUND' })\n  - Leave previous room if socket.data.conversationId exists: socket.leave(`conversation:${old}`)\n  - Join new room: socket.join(`conversation:${conversationId}`)\n  - Update socket.data.conversationId\n  - Get last message ID from conversation.messages\n  - Emit 'conversation:joined' with { conversation_id, last_message_id }\n  - ack({ success: true, last_message_id })\n  - Log subscription\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Room membership managed correctly\n- Previous room left before joining new\n- Acknowledgement callback works\n- Last message ID returned for cursor sync\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-7",
+      "title": "Implement typing indicators",
+      "phase": 1,
+      "dependsOn": ["socketio-6"],
+      "description": "Implement typing:start and typing:stop event handlers.\n\n**What to do:**\n- handleTyping(socket, conversationId, isTyping) function:\n  - Broadcast to conversation room (excluding sender): socket.to(`conversation:${conversationId}`).emit('user:typing', {...})\n  - Also emit to admin namespace: adminNs.to(`conversation:${conversationId}`).emit('user:typing', {...})\n  - Payload: { conversation_id, device_id, is_typing }\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Typing events broadcast to room excluding sender\n- Admin namespace receives typing events\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-8",
+      "title": "Implement auto-subscribe to latest conversation",
+      "phase": 1,
+      "dependsOn": ["socketio-6"],
+      "description": "Auto-subscribe clients to their most recent conversation on connect.\n\n**What to do:**\n- autoSubscribeToConversation(socket) function:\n  - Query prisma.conversation.findFirst with appId, deviceId, orderBy updatedAt desc\n  - If found, call handleConversationJoin(socket, conversation.id)\n- Call this function in connection handler after emitting 'connected'\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Client auto-joins their latest conversation\n- No error if no conversation exists\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-9",
+      "title": "Fix presence service for multi-connection support",
+      "phase": 1,
+      "dependsOn": ["socketio-1"],
+      "description": "Fix the presence service to track multiple connections per device correctly.\n\n**What to do:**\n- Change key structure:\n  - Per-connection: `presence:conn:${connectionId}` with TTL\n  - Per-device set: `presence:device:${appId}:${deviceId}` containing connectionIds\n- Update setPresence(appId, deviceId, connectionId):\n  - setEx the connection key with JSON { appId, deviceId, connectionId, lastSeen }\n  - sAdd connectionId to device set\n  - expire device set\n  - Only broadcastPresenceChange(online) if sCard == 1 (first connection)\n- Update removePresence(appId, deviceId, connectionId):\n  - del connection key\n  - sRem connectionId from device set\n  - Only broadcastPresenceChange(offline) if sCard == 0 (last connection)\n  - del device set if empty\n- Update isOnline to check sCard > 0\n- Add getActiveConnectionCount(appId, deviceId) function\n- Remove the localPresenceIntervals Map (no longer needed with per-connection tracking)\n\n**Files:**\n- backend/src/services/presenceService.ts\n\n**Acceptance criteria:**\n- Multiple connections from same device all tracked\n- Closing one connection doesn't mark device offline if others exist\n- Only broadcast offline when last connection closes\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-10",
+      "title": "Add session registry in Redis",
+      "phase": 1,
+      "dependsOn": ["socketio-9"],
+      "description": "Track active sessions in Redis for admin visibility across nodes.\n\n**What to do:**\n- Add constants: SESSION_KEY_PREFIX = 'session:', SESSION_SET_PREFIX = 'sessions:app:', SESSION_TTL = 120\n- registerSession(appId, deviceId, connectionId):\n  - hSet session key with { appId, deviceId, connectionId, connectedAt }\n  - expire session key with TTL\n  - sAdd connectionId to app's session set\n- unregisterSession(appId, deviceId, connectionId):\n  - del session key\n  - sRem from app's session set\n- getActiveSessions(appId):\n  - sMembers to get all connectionIds\n  - hGetAll for each to get session data\n  - Return array of session objects\n- Integrate with connection/disconnect handlers\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Sessions stored in Redis on connect\n- Sessions removed on disconnect\n- getActiveSessions returns all connected clients for an app\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-11",
+      "title": "Integrate presence with Socket.IO connection lifecycle",
+      "phase": 1,
+      "dependsOn": ["socketio-9", "socketio-10", "socketio-5"],
+      "description": "Wire up presence and session registry to Socket.IO connection events.\n\n**What to do:**\n- On client connection:\n  - Call registerSession(appId, deviceId, connectionId)\n  - Call setPresence(appId, deviceId, connectionId)\n  - Emit to admin namespace: adminNs.to(`app:${appId}`).emit('session:connect', {...})\n- On client disconnect:\n  - Call unregisterSession(appId, deviceId, connectionId)\n  - Call removePresence(appId, deviceId, connectionId)\n  - Emit to admin namespace: adminNs.to(`app:${appId}`).emit('session:disconnect', {...})\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Presence updated on connect/disconnect\n- Session registry updated on connect/disconnect\n- Admin namespace receives session events\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-12",
+      "title": "Create broadcast helper functions",
+      "phase": 1,
+      "dependsOn": ["socketio-6", "socketio-7"],
+      "description": "Create public broadcast functions for use by other services.\n\n**What to do:**\n- broadcastToConversation(conversationId, event, data):\n  - clientNs.to(`conversation:${conversationId}`).emit(event, data)\n  - adminNs.to(`conversation:${conversationId}`).emit(event, data)\n- broadcastAgentTyping(conversationId, isTyping):\n  - Call broadcastToConversation with 'agent:typing' event\n- Export both functions\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Functions exported and callable from other services\n- Broadcasts to both client and admin namespaces\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-13",
+      "title": "Update message service to use Socket.IO broadcast",
+      "phase": 1,
+      "dependsOn": ["socketio-12"],
+      "description": "Update messageService to use the new Socket.IO broadcast function.\n\n**What to do:**\n- Import broadcastToConversation from socketService (not websocketService)\n- Change broadcast call to: broadcastToConversation(conversationId, 'message:new', formattedMessage)\n- Keep the same message payload structure\n\n**Files:**\n- backend/src/services/messageService.ts\n\n**Acceptance criteria:**\n- Messages broadcast via Socket.IO\n- No import of old websocketService for broadcasting\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-14",
+      "title": "Update server initialization",
+      "phase": 1,
+      "dependsOn": ["socketio-11", "socketio-13"],
+      "description": "Update index.ts to initialize Socket.IO instead of/alongside ws.\n\n**What to do:**\n- Import initSocketIO and gracefulShutdown from socketService\n- Call await initSocketIO(server) after createServer\n- Optionally keep initWebSocket for backward compatibility during migration\n- Update graceful shutdown to call Socket.IO gracefulShutdown\n- Update console.log to show Socket.IO endpoint: ws://localhost:${port}/v1/socket.io\n\n**Files:**\n- backend/src/index.ts\n\n**Acceptance criteria:**\n- Socket.IO server starts on /v1/socket.io path\n- Graceful shutdown handles Socket.IO\n- Server starts without errors\n- pnpm run typecheck passes\n- pnpm run build passes"
+    },
+    {
+      "id": "socketio-15",
+      "title": "Create SDK Socket.IO packet types",
+      "phase": 2,
+      "dependsOn": ["socketio-14"],
+      "description": "Create Kotlin types for Socket.IO Engine.IO packet parsing.\n\n**What to do:**\n- Create SocketIOPacket.kt with:\n  - SocketIOPacketType enum: CONNECT(0), DISCONNECT(1), EVENT(2), ACK(3), CONNECT_ERROR(4), BINARY_EVENT(5), BINARY_ACK(6)\n  - SocketIOPacket data class: type, namespace, data (JsonElement?), ackId (Int?)\n  - SocketIOConnectionState enum: DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOPacket.kt (new file)\n\n**Acceptance criteria:**\n- All packet types defined\n- Companion object with fromValue() for type lookup\n- Clean Kotlin idioms used\n- Project compiles: ./gradlew :sdk:compileKotlinIosArm64 or similar"
+    },
+    {
+      "id": "socketio-16",
+      "title": "Create SDK Socket.IO event types",
+      "phase": 2,
+      "dependsOn": ["socketio-15"],
+      "description": "Create sealed class hierarchy for Socket.IO events in SDK.\n\n**What to do:**\n- Create SocketIOEvent.kt with sealed class SocketIOEvent:\n  - object Connected\n  - object Disconnected\n  - data class ConnectionEstablished(connectionId: String)\n  - data class MessageNew(data: JsonObject)\n  - data class AgentTyping(conversationId: String, isTyping: Boolean)\n  - data class ConversationJoined(conversationId: String, lastMessageId: String?)\n  - data class ServerShutdown(reconnectDelayMs: Long)\n  - data class Error(code: String, message: String?)\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOEvent.kt (new file)\n\n**Acceptance criteria:**\n- All server events have corresponding sealed class variant\n- Proper nullability handling\n- Project compiles"
+    },
+    {
+      "id": "socketio-17",
+      "title": "Implement Socket.IO packet parser",
+      "phase": 2,
+      "dependsOn": ["socketio-15"],
+      "description": "Implement Engine.IO and Socket.IO packet parsing logic.\n\n**What to do:**\n- Create SocketIOParser.kt with:\n  - parseEnginePacket(text: String): Pair<Char, String> - splits engine type from payload\n  - parseSocketIOPacket(data: String): SocketIOPacket? - parses Socket.IO packet format:\n    - Extract type digit\n    - Parse namespace if starts with '/'\n    - Parse ack ID if digits before data\n    - Parse JSON data\n  - encodeEvent(namespace: String, event: String, data: JsonObject, ackId: Int? = null): String\n    - Format: \"42/namespace,[\\\"event\\\",{data}]\" or with ackId: \"42/namespace,123[\\\"event\\\",{data}]\"\n  - encodeConnect(namespace: String, auth: JsonObject): String\n    - Format: \"0/namespace,{\\\"auth\\\":{...}}\"\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOParser.kt (new file)\n\n**Acceptance criteria:**\n- Can parse all packet types correctly\n- Can encode events and connect packets\n- Handles malformed input gracefully (returns null)\n- Project compiles"
+    },
+    {
+      "id": "socketio-18",
+      "title": "Implement SocketIOClient core",
+      "phase": 2,
+      "dependsOn": ["socketio-16", "socketio-17"],
+      "description": "Create the main SocketIOClient class with connection logic.\n\n**What to do:**\n- Create SocketIOClient.kt class with:\n  - Constructor: appId, apiKey, deviceId, baseUrl\n  - Properties: HttpClient with WebSockets, scope, session, connectionJob, pingJob\n  - Flows: _events (MutableSharedFlow), _connectionState (MutableStateFlow)\n  - Channel: outgoing for queued messages\n  - connect() suspend function:\n    - Build URL: baseUrl + /v1/socket.io/?EIO=4&transport=websocket\n    - Open webSocket connection\n    - Send connect packet with auth\n    - Start ping loop (send \"2\" every 25s)\n    - Process incoming frames in loop\n    - Handle disconnect in finally block\n  - disconnect() suspend function\n  - close() function\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOClient.kt (new file)\n\n**Acceptance criteria:**\n- Can establish WebSocket connection\n- Sends Engine.IO connect packet\n- Ping loop runs while connected\n- State flow updates correctly\n- Project compiles"
+    },
+    {
+      "id": "socketio-19",
+      "title": "Implement SocketIOClient frame handling",
+      "phase": 2,
+      "dependsOn": ["socketio-18"],
+      "description": "Add frame handling logic to parse incoming Socket.IO messages.\n\n**What to do:**\n- Add handleFrame(text: String) function:\n  - Check first char for Engine.IO type:\n    - '0': Engine open (config received)\n    - '2': Engine ping (ignore, we handle our own)\n    - '3': Engine pong received\n    - '4': Socket.IO packet - delegate to handleSocketIOPacket\n- Add handleSocketIOPacket(data: String) function:\n  - Parse packet using SocketIOParser\n  - Switch on packet.type:\n    - CONNECT: update state to CONNECTED, emit Connected event\n    - DISCONNECT: update state, emit Disconnected\n    - EVENT: call handleEvent(packet)\n    - ACK: call handleAck(packet)\n    - CONNECT_ERROR: emit Error event\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOClient.kt\n\n**Acceptance criteria:**\n- All Engine.IO packet types handled\n- Socket.IO packets parsed and dispatched\n- Events emitted to flow\n- Project compiles"
+    },
+    {
+      "id": "socketio-20",
+      "title": "Implement SocketIOClient event dispatching",
+      "phase": 2,
+      "dependsOn": ["socketio-19"],
+      "description": "Add event dispatching to convert Socket.IO events to SocketIOEvent sealed class.\n\n**What to do:**\n- Add handleEvent(packet: SocketIOPacket) function:\n  - Extract event array from packet.data\n  - Get event name from array[0]\n  - Get event data from array[1]\n  - Switch on event name:\n    - 'connected': emit ConnectionEstablished\n    - 'message:new': emit MessageNew\n    - 'agent:typing': emit AgentTyping\n    - 'conversation:joined': emit ConversationJoined\n    - 'server:shutdown': emit ServerShutdown\n    - 'error': emit Error\n    - 'pong': ignore (application-level)\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOClient.kt\n\n**Acceptance criteria:**\n- All known events converted to sealed class\n- Unknown events ignored gracefully\n- Events emitted to SharedFlow\n- Project compiles"
+    },
+    {
+      "id": "socketio-21",
+      "title": "Implement SocketIOClient acknowledgement handling",
+      "phase": 2,
+      "dependsOn": ["socketio-19"],
+      "description": "Add acknowledgement support for request-response patterns.\n\n**What to do:**\n- Add properties: ackCounter (Int), pendingAcks (Map<Int, CompletableDeferred<JsonElement?>>)\n- Add handleAck(packet: SocketIOPacket) function:\n  - Get ackId from packet\n  - Find and complete the pending deferred\n- Add emitWithAck suspend function:\n  - Increment ackCounter\n  - Create CompletableDeferred and store in pendingAcks\n  - Encode and send packet with ackId\n  - withTimeout(10_000) await the deferred\n  - Parse response and return Result\n  - Clean up pending ack on timeout/error\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOClient.kt\n\n**Acceptance criteria:**\n- Acks matched by ID\n- Timeout after 10 seconds\n- Result returned with success/failure\n- Project compiles"
+    },
+    {
+      "id": "socketio-22",
+      "title": "Implement SocketIOClient public API",
+      "phase": 2,
+      "dependsOn": ["socketio-20", "socketio-21"],
+      "description": "Add public API methods for SDK consumers.\n\n**What to do:**\n- Add emit(event: String, data: JsonObject) private suspend function\n- Add joinConversation(conversationId: String): Result<String?> using emitWithAck\n- Add leaveConversation(conversationId: String) using emit\n- Add startTyping(conversationId: String) using emit\n- Add stopTyping(conversationId: String) using emit\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOClient.kt\n\n**Acceptance criteria:**\n- All public methods work correctly\n- joinConversation returns last_message_id on success\n- Events properly encoded and sent\n- Project compiles"
+    },
+    {
+      "id": "socketio-23",
+      "title": "Update NetworkConfig for Socket.IO",
+      "phase": 2,
+      "dependsOn": ["socketio-15"],
+      "description": "Update NetworkConfig to include Socket.IO path.\n\n**What to do:**\n- Update DEFAULT_WS_URL to use Socket.IO path: wss://api.replyhq.dev/v1/socket.io\n- Update localhost() function to return ws://host:port/v1/socket.io\n- Add constant SOCKET_IO_PATH = '/v1/socket.io'\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/NetworkConfig.kt\n\n**Acceptance criteria:**\n- Default URLs point to Socket.IO endpoint\n- Localhost helper updated\n- Project compiles"
+    },
+    {
+      "id": "socketio-24",
+      "title": "Update ConnectionManager to use SocketIOClient",
+      "phase": 2,
+      "dependsOn": ["socketio-22", "socketio-23"],
+      "description": "Simplify ConnectionManager to use SocketIOClient instead of RealtimeClient.\n\n**What to do:**\n- Change constructor parameter from RealtimeClient to SocketIOClient\n- Update state mapping from SocketIOConnectionState to ConnectionState\n- Update events flow to use SocketIOClient.events\n- Handle ServerShutdown event:\n  - On receive, schedule reconnect after reconnectDelayMs\n- Simplify reconnection logic (Socket.IO handles most of it)\n- Update setActiveConversation to call socketClient.joinConversation\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/ConnectionManager.kt\n\n**Acceptance criteria:**\n- Uses SocketIOClient instead of RealtimeClient\n- Server shutdown triggers delayed reconnect\n- Conversation subscription works\n- Project compiles"
+    },
+    {
+      "id": "socketio-25",
+      "title": "Update SyncManager event handling",
+      "phase": 2,
+      "dependsOn": ["socketio-24"],
+      "description": "Update SyncManager to handle SocketIOEvent types.\n\n**What to do:**\n- Update event collection to handle SocketIOEvent sealed class:\n  - SocketIOEvent.MessageNew: convert JsonObject to Message, handle as before\n  - SocketIOEvent.AgentTyping: emit to agentTypingEvents flow\n  - SocketIOEvent.ConversationJoined: store lastMessageId for cursor sync\n  - SocketIOEvent.ServerShutdown: log, let ConnectionManager handle reconnect\n  - SocketIOEvent.Error: log error\n- Add lastKnownMessageId property for cursor-based sync\n- Update fetchMissedMessages to use lastKnownMessageId if available (future: after_message_id param)\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/SyncManager.kt\n\n**Acceptance criteria:**\n- All SocketIOEvent types handled\n- Message parsing works correctly\n- Typing events emitted\n- Project compiles"
+    },
+    {
+      "id": "socketio-26",
+      "title": "Update ChatSDKInitializer to create SocketIOClient",
+      "phase": 2,
+      "dependsOn": ["socketio-24"],
+      "description": "Update SDK initialization to create SocketIOClient instead of RealtimeClient.\n\n**What to do:**\n- Update createConnectionManager() to:\n  - Create SocketIOClient with appId, apiKey, deviceId, websocketUrl\n  - Create ConnectionManager with SocketIOClient\n- Remove RealtimeClient creation\n- Ensure all platform-specific initializers updated (Android, iOS)\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/ChatSDK.kt\n- sdk/src/androidMain/.../ChatSDKInitializer.kt (if exists)\n- sdk/src/iosMain/.../ChatSDKInitializer.kt (if exists)\n\n**Acceptance criteria:**\n- SDK initializes with SocketIOClient\n- No references to old RealtimeClient in initialization path\n- Project compiles for all targets"
+    },
+    {
+      "id": "socketio-27",
+      "title": "Implement admin namespace authentication",
+      "phase": 3,
+      "dependsOn": ["socketio-14"],
+      "description": "Add authentication middleware to the /admin namespace.\n\n**What to do:**\n- Add ns.use() middleware for admin namespace:\n  - Extract app_id, admin_token from socket.handshake.auth\n  - Validate parameters present\n  - Validate app exists and admin_token is valid (for now, can match apiKey)\n  - Set socket.data with appId, connectionId, subscribedConversations (empty Set)\n  - Future: separate admin tokens from client API keys\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Admin connections authenticated\n- socket.data populated correctly\n- Invalid credentials rejected\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-28",
+      "title": "Implement admin connection handler",
+      "phase": 3,
+      "dependsOn": ["socketio-27"],
+      "description": "Handle admin connections in the /admin namespace.\n\n**What to do:**\n- On 'connection' event:\n  - Log admin connection\n  - Emit 'connected' event\n  - Auto-join app room: socket.join(`app:${appId}`)\n  - Register event handlers: app:subscribe, conversation:join, message:send, typing:start, typing:stop, sessions:list, ping, disconnect\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Admin joins app room on connect\n- All event handlers registered\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-29",
+      "title": "Implement admin sessions:list handler",
+      "phase": 3,
+      "dependsOn": ["socketio-28", "socketio-10"],
+      "description": "Implement sessions:list to return all active sessions for an app.\n\n**What to do:**\n- Handle 'sessions:list' event:\n  - Extract app_id from data\n  - Validate app_id matches socket.data.appId\n  - Call getActiveSessions(appId)\n  - Return via ack: { sessions: [...] }\n- Session data should include: connectionId, deviceId, connectedAt, userInfo (if available)\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Returns all active sessions for the app\n- Session data includes required fields\n- Works across nodes (uses Redis)\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-30",
+      "title": "Implement admin message:send handler",
+      "phase": 3,
+      "dependsOn": ["socketio-28", "socketio-13"],
+      "description": "Allow admins to send messages as agent.\n\n**What to do:**\n- Handle 'message:send' event:\n  - Extract conversation_id, body, local_id from data\n  - Validate conversation belongs to admin's app\n  - Call createMessage with sender='agent'\n  - Return via ack: { success: true, message: {...} } or { success: false, error: '...' }\n- Message will be broadcast to conversation via existing messageService logic\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Admin can send messages via WebSocket\n- Messages created with sender='agent'\n- Broadcast to clients works\n- Acknowledgement returned\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-31",
+      "title": "Implement admin typing handlers",
+      "phase": 3,
+      "dependsOn": ["socketio-28", "socketio-12"],
+      "description": "Implement admin typing indicators.\n\n**What to do:**\n- Handle 'typing:start' and 'typing:stop' events:\n  - Validate conversation belongs to admin's app\n  - Call broadcastAgentTyping(conversationId, isTyping)\n- Agent typing broadcasts to client namespace only\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Admin typing broadcasts to clients\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-32",
+      "title": "Add admin conversation:join handler",
+      "phase": 3,
+      "dependsOn": ["socketio-28"],
+      "description": "Allow admins to subscribe to specific conversations.\n\n**What to do:**\n- Handle 'conversation:join' event:\n  - Validate conversation exists and belongs to admin's app\n  - Join room: socket.join(`conversation:${conversationId}`)\n  - Add to socket.data.subscribedConversations\n  - Emit 'conversation:joined' with last_message_id\n  - Return ack\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Admin can subscribe to any conversation in their app\n- Receives realtime updates for that conversation\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-33",
+      "title": "Write backend integration tests",
+      "phase": 3,
+      "dependsOn": ["socketio-30", "socketio-31", "socketio-32"],
+      "description": "Write integration tests for Socket.IO functionality.\n\n**What to do:**\n- Create socketService.test.ts with tests for:\n  - Client connection with valid/invalid credentials\n  - Conversation join/leave\n  - Message broadcast to room members\n  - Multi-connection presence (connect 2, disconnect 1, still online)\n  - Admin session listing\n  - Admin message sending\n  - Typing indicators both directions\n- Use socket.io-client for test connections\n- Mock Redis for unit tests or use test Redis\n\n**Files:**\n- backend/src/services/socketService.test.ts (new file)\n\n**Acceptance criteria:**\n- All critical paths tested\n- Tests pass: pnpm test\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-34",
+      "title": "Deprecate old websocketService",
+      "phase": 4,
+      "dependsOn": ["socketio-33"],
+      "description": "Mark old websocketService as deprecated and update imports.\n\n**What to do:**\n- Add @deprecated JSDoc to all exports in websocketService.ts\n- Update any remaining imports to use socketService\n- Keep websocketService functional for backward compatibility\n- Add console.warn on initWebSocket: 'websocketService is deprecated, use socketService'\n- Update README with migration notes\n\n**Files:**\n- backend/src/services/websocketService.ts\n- backend/README.md\n\n**Acceptance criteria:**\n- Deprecation warnings in place\n- No active usage of old service for new features\n- Documentation updated\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-35",
+      "title": "Deprecate old RealtimeClient in SDK",
+      "phase": 4,
+      "dependsOn": ["socketio-26"],
+      "description": "Mark old RealtimeClient as deprecated.\n\n**What to do:**\n- Add @Deprecated annotation to RealtimeClient class\n- Add deprecation message pointing to SocketIOClient\n- Keep functional for any external usage\n- Update SDK README with migration notes\n\n**Files:**\n- sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/RealtimeClient.kt\n- sdk/README.md (if exists)\n\n**Acceptance criteria:**\n- Deprecation annotation in place\n- Documentation updated\n- Project compiles"
+    },
+    {
+      "id": "socketio-36",
+      "title": "Add connection metrics and logging",
+      "phase": 4,
+      "dependsOn": ["socketio-14"],
+      "description": "Add metrics and structured logging for Socket.IO connections.\n\n**What to do:**\n- Add metrics tracking:\n  - connection_count (gauge)\n  - connections_total (counter by namespace)\n  - disconnections_total (counter by reason)\n  - messages_sent_total (counter)\n  - messages_received_total (counter)\n- Add structured logging with fields:\n  - connectionId, appId, deviceId on all connection logs\n  - conversationId on message/typing logs\n  - reason on disconnect logs\n- Export getConnectionCount() function\n\n**Files:**\n- backend/src/services/socketService.ts\n\n**Acceptance criteria:**\n- Metrics exported (console or metrics endpoint)\n- Logs include correlation IDs\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-37",
+      "title": "Add rate limiting",
+      "phase": 4,
+      "dependsOn": ["socketio-14"],
+      "description": "Add rate limiting for Socket.IO connections and messages.\n\n**What to do:**\n- Add connection rate limiting:\n  - Max connections per IP: 10/minute\n  - Max connections per device: 5 concurrent\n- Add message rate limiting:\n  - Max messages per connection: 60/minute\n  - Max typing events per connection: 10/minute\n- Use Redis for distributed rate limiting\n- Emit 'error' event with code 'RATE_LIMITED' when exceeded\n- Disconnect repeat offenders\n\n**Files:**\n- backend/src/services/socketService.ts\n- backend/src/middleware/rateLimiter.ts (new or update existing)\n\n**Acceptance criteria:**\n- Rate limits enforced\n- Redis used for cross-node consistency\n- Graceful error messaging\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-38",
+      "title": "End-to-end integration test",
+      "phase": 4,
+      "dependsOn": ["socketio-33", "socketio-25"],
+      "description": "Write end-to-end test covering full client-server flow.\n\n**What to do:**\n- Create e2e test that:\n  1. Starts backend server\n  2. Connects SDK client (simulated or real)\n  3. Sends message via REST API\n  4. Verifies message received via Socket.IO\n  5. Sends typing indicator\n  6. Verifies typing broadcast\n  7. Disconnects and verifies presence updates\n  8. Reconnects after server:shutdown simulation\n- Can use test harness or manual verification steps\n\n**Files:**\n- backend/src/e2e/socketio.e2e.test.ts (new file) or manual test script\n\n**Acceptance criteria:**\n- Full flow tested\n- Reconnection works\n- Document manual test steps if automated not feasible\n- pnpm run typecheck passes"
+    },
+    {
+      "id": "socketio-39",
+      "title": "Update deployment documentation",
+      "phase": 4,
+      "dependsOn": ["socketio-34", "socketio-35"],
+      "description": "Update deployment docs with Socket.IO configuration.\n\n**What to do:**\n- Document new WebSocket endpoint: /v1/socket.io\n- Document sticky sessions recommendation for load balancers\n- Document Redis requirements for multi-node\n- Document environment variables if any new ones added\n- Add troubleshooting section for common Socket.IO issues\n\n**Files:**\n- backend/README.md\n- Any deployment docs\n\n**Acceptance criteria:**\n- Clear deployment instructions\n- Load balancer configuration documented\n- Redis requirements documented"
+    }
+  ]
+}

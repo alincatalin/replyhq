@@ -4,13 +4,15 @@ import dev.replyhq.sdk.data.models.Message
 import dev.replyhq.sdk.data.models.MessageStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 class MessageQueue(
     private val database: ChatDatabaseWrapper,
     private val maxRetries: Int = 3
 ) {
+    @OptIn(ExperimentalTime::class)
     suspend fun enqueue(message: Message): Message {
         val queuedMessage = message.copy(
             status = MessageStatus.QUEUED,

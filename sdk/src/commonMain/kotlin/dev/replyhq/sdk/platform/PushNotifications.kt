@@ -7,4 +7,5 @@ expect class PushNotifications {
     
     fun requestPermission()
     fun getCurrentToken(): String?
+    fun updateToken(newToken: String)
 }

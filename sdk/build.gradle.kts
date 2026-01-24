@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.androidLint)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
 }
 
 sqldelight {
@@ -85,6 +87,12 @@ kotlin {
                 implementation(libs.sqldelight.coroutines)
                 // DateTime
                 implementation(libs.kotlinx.datetime)
+                // Compose Multiplatform
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.materialIconsExtended)
+                implementation(compose.ui)
             }
         }
 
@@ -102,6 +110,8 @@ kotlin {
                 implementation(libs.sqldelight.android.driver)
                 // Coroutines Android
                 implementation(libs.kotlinx.coroutines.android)
+                // Firebase Messaging
+                implementation(libs.firebase.messaging)
             }
         }
 

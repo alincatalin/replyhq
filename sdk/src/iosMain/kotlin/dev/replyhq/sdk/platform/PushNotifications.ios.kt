@@ -7,28 +7,31 @@ import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionBadge
 import platform.UserNotifications.UNAuthorizationOptionSound
 import platform.UserNotifications.UNUserNotificationCenter
+import platform.UIKit.UIApplication
 
 actual class PushNotifications {
-    private val _token = MutableStateFlow<String?>(null)
-    
+    companion object {
+        private val sharedToken = MutableStateFlow<String?>(null)
+    }
+
     actual val token: Flow<String?>
-        get() = _token.asStateFlow()
+        get() = sharedToken.asStateFlow()
     
     actual fun requestPermission() {
         val center = UNUserNotificationCenter.currentNotificationCenter()
         val options = UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge
         center.requestAuthorizationWithOptions(options) { granted, error ->
             if (granted) {
-                // Permission granted, APNs token will be provided via delegate
+                UIApplication.sharedApplication.registerForRemoteNotifications()
             }
         }
     }
     
     actual fun getCurrentToken(): String? {
-        return _token.value
+        return sharedToken.value
     }
     
-    fun updateToken(newToken: String) {
-        _token.value = newToken
+    actual fun updateToken(newToken: String) {
+        sharedToken.value = newToken
     }
 }

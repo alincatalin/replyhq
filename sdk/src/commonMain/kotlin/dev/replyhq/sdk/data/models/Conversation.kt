@@ -1,8 +1,9 @@
 package dev.replyhq.sdk.data.models
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 enum class ConversationStatus {
@@ -19,8 +20,10 @@ data class Conversation(
     val visitorId: String? = null,
     val status: ConversationStatus = ConversationStatus.OPEN,
     @SerialName("created_at")
+    @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
     @SerialName("updated_at")
+    @Serializable(with = InstantSerializer::class)
     val updatedAt: Instant,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, JsonElement> = emptyMap()
 )

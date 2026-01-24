@@ -36,63 +36,63 @@
       "id": "SDK-005",
       "title": "SQLDelight database schema",
       "description": "Set up local persistence with SQLDelight.\n\n**What to do:**\n- Create SQLDelight schema files for Conversation and Message tables\n- Add queries: insertMessage, getMessagesByConversation, getQueuedMessages, updateMessageStatus\n- Create data/local/ChatDatabase.kt wrapper\n- Create data/local/MessageQueue.kt for offline queue operations\n- Create data/local/Preferences.kt for SDK state storage\n\n**Acceptance criteria:**\n- SQLDelight generates type-safe code\n- ./gradlew :sdk:build passes\n- Can insert and query messages",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-004"]
     },
     {
       "id": "SDK-006",
       "title": "Ktor HTTP client - ChatApi",
       "description": "Implement REST API client.\n\n**What to do:**\n- Create data/remote/ChatApi.kt with Ktor HttpClient\n- Implement endpoints:\n  - POST /conversations - get or create conversation\n  - POST /conversations/:id/messages - send message\n  - GET /conversations/:id/messages?after=<ts> - fetch messages\n  - POST /push-token - register push token\n- Add headers: X-App-Id, X-Device-Id, X-SDK-Version, Content-Type\n- Base URL: https://api.replyhq.dev/v1\n\n**Acceptance criteria:**\n- API client compiles\n- Request/response DTOs use kotlinx.serialization\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-003", "SDK-004"]
     },
     {
       "id": "SDK-007",
       "title": "WebSocket realtime client",
       "description": "Implement WebSocket handler for real-time messaging.\n\n**What to do:**\n- Create data/remote/RealtimeClient.kt with Ktor WebSocket\n- Connect to wss://api.replyhq.dev/v1/realtime?app_id=xxx&device_id=xxx\n- Handle server events: message.new, agent.typing\n- Send client events: user.typing, ping\n- Implement heartbeat ping every 30s\n\n**Acceptance criteria:**\n- WebSocket connects and receives messages\n- Exposes Flow<RealtimeEvent> for consumers\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-006"]
     },
     {
       "id": "SDK-008",
       "title": "ConnectionManager state machine",
       "description": "Implement connection lifecycle management.\n\n**What to do:**\n- Create core/ConnectionManager.kt with states: DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING\n- Implement connect(), disconnect(), pause(), resume() methods\n- Add exponential backoff reconnection: 1s → 2s → 4s → 8s → max 30s\n- Listen to platform Connectivity for network changes\n\n**Acceptance criteria:**\n- State transitions are correct\n- Auto-reconnect on network restore\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-002", "SDK-007"]
     },
     {
       "id": "SDK-009",
       "title": "SyncManager offline sync",
       "description": "Implement offline message synchronization.\n\n**What to do:**\n- Create core/SyncManager.kt\n- On network restore: fetch queued messages, send oldest first\n- Update message state: QUEUED → SENDING → SENT or FAILED\n- Max 3 retries per message before FAILED\n- On reconnect: fetch missed messages from server\n\n**Acceptance criteria:**\n- Messages sent offline sync when online\n- No duplicates (server dedupes by local_id)\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-005", "SDK-008"]
     },
     {
       "id": "SDK-010",
       "title": "SessionManager lifecycle",
       "description": "Implement session and user management.\n\n**What to do:**\n- Create core/SessionManager.kt\n- Generate and persist device_id (UUID v4) on first launch\n- Handle setUser() - starts/continues conversation\n- Handle clearUser() - ends session\n- Auto-detect app foreground/background\n\n**Acceptance criteria:**\n- Device ID persists across launches\n- User changes trigger new conversation\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-005", "SDK-008"]
     },
     {
       "id": "SDK-011",
       "title": "DeviceContextCollector",
       "description": "Implement device metadata collection.\n\n**What to do:**\n- Create core/DeviceContextCollector.kt\n- Collect: platform, osVersion, appVersion, deviceModel, locale, timezone\n- Use expect/actual for platform-specific collection\n\n**Acceptance criteria:**\n- Returns valid DeviceContext on both platforms\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-002", "SDK-004"]
     },
     {
       "id": "SDK-012",
       "title": "ChatSDK main entry point",
       "description": "Create the main SDK singleton with public API.\n\n**What to do:**\n- Create ChatSDK.kt as object singleton\n- Implement init(context, appId) minimal version\n- Implement init(context, config) full version\n- Implement setUser(), clearUser()\n- Implement open(), close()\n- Expose unreadCount: StateFlow<Int>\n- Implement onAppForegrounded(), onAppBackgrounded()\n- Implement reset() for debug\n\n**Acceptance criteria:**\n- Public API matches PRD spec\n- Fail fast on missing appId\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-009", "SDK-010", "SDK-011"]
     },
     {
       "id": "SDK-013",
       "title": "Chat theme system",
       "description": "Implement theming for chat UI.\n\n**What to do:**\n- Create ui/theme/ChatTheme.kt with Compose theming\n- Support accentColor, darkMode (LIGHT/DARK/SYSTEM)\n- Create color scheme for message bubbles, backgrounds, text\n\n**Acceptance criteria:**\n- Theme applies to all UI components\n- Dark mode works correctly\n- ./gradlew :sdk:build passes",
-      "passes": false,
+      "passes": true,
       "dependsOn": ["SDK-003"]
     },
     {

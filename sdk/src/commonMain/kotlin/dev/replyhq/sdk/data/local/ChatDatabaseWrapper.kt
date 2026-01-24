@@ -11,7 +11,7 @@ import dev.replyhq.sdk.data.models.SenderType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 
 class ChatDatabaseWrapper(

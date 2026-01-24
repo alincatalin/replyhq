@@ -5,10 +5,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 actual class PushNotifications {
-    private val _token = MutableStateFlow<String?>(null)
-    
+    companion object {
+        private val sharedToken = MutableStateFlow<String?>(null)
+    }
+
     actual val token: Flow<String?>
-        get() = _token.asStateFlow()
+        get() = sharedToken.asStateFlow()
     
     actual fun requestPermission() {
         // On Android 13+, POST_NOTIFICATIONS permission is required
@@ -17,10 +19,10 @@ actual class PushNotifications {
     }
     
     actual fun getCurrentToken(): String? {
-        return _token.value
+        return sharedToken.value
     }
     
-    fun updateToken(newToken: String) {
-        _token.value = newToken
+    actual fun updateToken(newToken: String) {
+        sharedToken.value = newToken
     }
 }

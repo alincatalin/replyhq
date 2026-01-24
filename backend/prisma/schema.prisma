@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model App {
+  id        String   @id @default(uuid())
+  name      String
+  apiKey    String   @unique @map("api_key")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  conversations Conversation[]
+  devices       Device[]
+
+  @@map("apps")
+}
+
+model Conversation {
+  id        String   @id
+  visitorId String   @map("visitor_id")
+  status    String   @default("open") // open | resolved
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  appId String @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  userId   String? @map("user_id")
+  deviceId String  @map("device_id")
+
+  messages Message[]
+
+  @@unique([appId, deviceId, userId])
+  @@index([appId])
+  @@index([deviceId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id
+  localId        String   @unique @map("local_id")
+  body           String
+  sender         String   // user | agent | system
+  status         String   @default("SENT") // QUEUED | SENDING | SENT | DELIVERED | READ | FAILED
+  sequence       Int      @default(autoincrement())
+  createdAt      DateTime @default(now()) @map("created_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  readAt         DateTime? @map("read_at")
+
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([conversationId, sequence])
+  @@map("messages")
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  deviceId  String   @map("device_id")
+  userId    String?  @map("user_id")
+  pushToken String?  @map("push_token")
+  platform  String   // android | ios
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  appId String @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  @@unique([appId, deviceId])
+  @@index([appId])
+  @@map("devices")
+}

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReplyHQ Setup</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #111827;
+      --card: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --success: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0%, #0b1120 50%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+
+    p {
+      margin: 0 0 24px 0;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 320px 1fr;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    button {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .apps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .app-card {
+      background: var(--card);
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .app-card strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .app-card code {
+      display: block;
+      background: #0b1120;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>ReplyHQ Setup</h1>
+  <p>Generate and manage app credentials. These are required for both the SDK and admin UI.</p>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Create new app</h2>
+      <label for="appName">App name</label>
+      <input id="appName" placeholder="My product" />
+      <button id="createBtn">Create app</button>
+      <div class="status" id="status">Ready.</div>
+    </section>
+
+    <section class="panel">
+      <h2>Existing apps</h2>
+      <div class="apps" id="apps"></div>
+      <button class="secondary" id="refreshBtn">Refresh</button>
+    </section>
+  </div>
+
+  <script>
+    const appNameEl = document.getElementById('appName');
+    const createBtn = document.getElementById('createBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const appsEl = document.getElementById('apps');
+    const statusEl = document.getElementById('status');
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    async function loadApps() {
+      const res = await fetch('/setup/api/apps');
+      if (!res.ok) {
+        setStatus('Failed to load apps.');
+        return;
+      }
+      const data = await res.json();
+      renderApps(data.apps || []);
+    }
+
+    function renderApps(apps) {
+      appsEl.innerHTML = '';
+      apps.forEach((app) => {
+        const card = document.createElement('div');
+        card.className = 'app-card';
+        card.innerHTML = `
+          <strong>${app.name}</strong>
+          <code>app_id: ${app.id}</code>
+          <code>api_key: ${app.api_key}</code>
+          <div class="status">created ${new Date(app.created_at).toLocaleString()}</div>
+        `;
+        appsEl.appendChild(card);
+      });
+    }
+
+    async function createApp() {
+      const name = appNameEl.value.trim();
+      if (!name) {
+        setStatus('App name is required.');
+        return;
+      }
+      const res = await fetch('/setup/api/apps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        setStatus('Failed to create app.');
+        return;
+      }
+      const data = await res.json();
+      setStatus(`Created ${data.app.name}.`);
+      appNameEl.value = '';
+      loadApps();
+    }
+
+    createBtn.addEventListener('click', createApp);
+    refreshBtn.addEventListener('click', loadApps);
+
+    loadApps();
+  </script>
+</body>
+</html>
