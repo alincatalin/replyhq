@@ -76,6 +76,8 @@ model Device {
   deviceId  String   @map("device_id")
   userId    String?  @map("user_id")
   pushToken String?  @map("push_token")
+  pushTokenProvider String?   @map("push_token_provider") // fcm, apns
+  pushTokenUpdatedAt DateTime? @map("push_token_updated_at")
   platform  String   // android | ios
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -83,8 +85,11 @@ model Device {
   appId String @map("app_id")
   app   App    @relation(fields: [appId], references: [id])
 
+  pushNotifications PushNotification[]
+
   @@unique([appId, deviceId])
   @@index([appId])
+  @@index([pushToken])
   @@map("devices")
 }
 
@@ -190,4 +195,28 @@ model Event {
   @@index([eventName, eventTimestamp(sort: Desc)])
   @@index([appId, eventName, eventTimestamp(sort: Desc)])
   @@map("events")
+}
+
+model PushNotification {
+  id            String   @id @default(uuid())
+  deviceId      String   @map("device_id")
+  title         String?
+  body          String
+  data          Json?
+  status        String   // pending, sent, failed, delivered
+
+  sentAt        DateTime? @map("sent_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  errorMessage  String?   @map("error_message")
+  errorCode     String?   @map("error_code")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  retainUntil   DateTime @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("retain_until")
+
+  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, status])
+  @@index([retainUntil])
+  @@index([createdAt(sort: Desc)])
+  @@map("push_notifications")
 }
