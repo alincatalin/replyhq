@@ -78,6 +78,8 @@ router.get('/api/users', validateAdminAuth, validateAdmin, async (req, res, next
   try {
     const { appId } = req.adminAuth!;
 
+    // FIX N+1: Use Prisma's include to fetch conversations with their last message in a single query
+    // This uses a LEFT JOIN which is much more efficient than N separate queries
     const conversations = await prisma.conversation.findMany({
       where: { appId },
       orderBy: { updatedAt: 'desc' },
@@ -88,6 +90,15 @@ router.get('/api/users', validateAdminAuth, validateAdmin, async (req, res, next
         status: true,
         updatedAt: true,
         createdAt: true,
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            body: true,
+            sender: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -96,29 +107,23 @@ router.get('/api/users', validateAdminAuth, validateAdmin, async (req, res, next
       conversations.map((conv) => conv.deviceId)
     );
 
-    const users = await Promise.all(
-      conversations.map(async (conv) => {
-        const lastMessage = await prisma.message.findFirst({
-          where: { conversationId: conv.id },
-          orderBy: { createdAt: 'desc' },
-          select: { body: true, sender: true, createdAt: true },
-        });
+    const users = conversations.map((conv) => {
+      const lastMessage = conv.messages[0];
 
-        return {
-          conversation_id: conv.id,
-          user_id: conv.userId,
-          device_id: conv.deviceId,
-          status: conv.status,
-          updated_at: conv.updatedAt.toISOString(),
-          created_at: conv.createdAt.toISOString(),
-          last_message: lastMessage?.body ? sanitizeHtml(lastMessage.body) : null,
-          last_sender: lastMessage?.sender ?? null,
-          last_message_at: lastMessage?.createdAt.toISOString() ?? null,
-          is_online: presence.get(conv.deviceId) ?? false,
-          display_name: conv.userId ? `User ${conv.userId}` : `Visitor ${conv.deviceId.slice(0, 6)}`,
-        };
-      })
-    );
+      return {
+        conversation_id: conv.id,
+        user_id: conv.userId,
+        device_id: conv.deviceId,
+        status: conv.status,
+        updated_at: conv.updatedAt.toISOString(),
+        created_at: conv.createdAt.toISOString(),
+        last_message: lastMessage?.body ? sanitizeHtml(lastMessage.body) : null,
+        last_sender: lastMessage?.sender ?? null,
+        last_message_at: lastMessage?.createdAt.toISOString() ?? null,
+        is_online: presence.get(conv.deviceId) ?? false,
+        display_name: conv.userId ? `User ${conv.userId}` : `Visitor ${conv.deviceId.slice(0, 6)}`,
+      };
+    });
 
     res.json({ users });
   } catch (error) {
