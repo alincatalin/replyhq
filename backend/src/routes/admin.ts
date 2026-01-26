@@ -5,8 +5,8 @@ import { prisma } from '../lib/prisma.js';
 import { createMessage } from '../services/messageService.js';
 import { getConversationPresence } from '../services/presenceService.js';
 import { config } from '../config/index.js';
-import { validateAdminAuth } from '../middleware/auth.js';
-import { verifyApiKey } from '../lib/apiKey.js';
+import { requireJWT } from '../middleware/jwt.js';
+import { requirePermission, Permission } from '../middleware/permissions.js';
 
 /**
  * Basic HTML sanitization to prevent XSS in admin dashboard
@@ -26,45 +26,6 @@ function sanitizeHtml(html: string): string {
 
 const router: IRouter = express.Router();
 
-async function validateAdmin(req: Request, res: Response, next: NextFunction) {
-  // Get credentials from headers (set by validateAdminAuth middleware)
-  const { appId, apiKey } = req.adminAuth!;
-
-  try {
-    const app = await prisma.app.findUnique({
-      where: { id: appId },
-      select: { id: true, apiKeyHash: true },
-    });
-
-    if (!app) {
-      return res.status(403).json({
-        error: 'Invalid credentials',
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid app_id',
-      });
-    }
-
-    // Verify API key against stored hash
-    const isValidKey = verifyApiKey(apiKey, app.apiKeyHash);
-
-    if (!isValidKey) {
-      return res.status(403).json({
-        error: 'Invalid credentials',
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid API key',
-      });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Admin validation error:', error);
-    return res.status(500).json({
-      error: 'Authentication error',
-      code: 'AUTH_ERROR',
-    });
-  }
-}
-
 router.get('/', (_req, res) => {
   res.setHeader(
     'Content-Security-Policy',
@@ -74,9 +35,9 @@ router.get('/', (_req, res) => {
   res.sendFile(filePath);
 });
 
-router.get('/api/users', validateAdminAuth, validateAdmin, async (req, res, next) => {
+router.get('/api/users', requireJWT, requirePermission(Permission.VIEW_USERS), async (req, res, next) => {
   try {
-    const { appId } = req.adminAuth!;
+    const { appId } = req.jwtPayload!;
 
     // FIX N+1: Use Prisma's include to fetch conversations with their last message in a single query
     // This uses a LEFT JOIN which is much more efficient than N separate queries
@@ -131,9 +92,9 @@ router.get('/api/users', validateAdminAuth, validateAdmin, async (req, res, next
   }
 });
 
-router.get('/api/conversations/:id/messages', validateAdminAuth, validateAdmin, async (req, res, next) => {
+router.get('/api/conversations/:id/messages', requireJWT, requirePermission(Permission.VIEW_CONVERSATIONS), async (req, res, next) => {
   try {
-    const { appId } = req.adminAuth!;
+    const { appId } = req.jwtPayload!;
     const conversationId = req.params.id;
     const after = req.query.after ? Number(req.query.after) : undefined;
     const limit = req.query.limit ? Number(req.query.limit) : Math.min(200, config.message.defaultLimit * 4);
@@ -180,9 +141,9 @@ router.get('/api/conversations/:id/messages', validateAdminAuth, validateAdmin, 
   }
 });
 
-router.post('/api/conversations/:id/messages', validateAdminAuth, validateAdmin, async (req, res, next) => {
+router.post('/api/conversations/:id/messages', requireJWT, requirePermission(Permission.SEND_MESSAGES), async (req, res, next) => {
   try {
-    const { appId } = req.adminAuth!;
+    const { appId } = req.jwtPayload!;
     const conversationId = req.params.id;
     const body = req.body?.body as string | undefined;
 

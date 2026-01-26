@@ -18,6 +18,8 @@ model App {
 
   conversations Conversation[]
   devices       Device[]
+  adminUsers    AdminUser[]
+  subscription  Subscription?
 
   @@map("apps")
 }
@@ -83,4 +85,59 @@ model Device {
   @@unique([appId, deviceId])
   @@index([appId])
   @@map("devices")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("AGENT") // OWNER | ADMIN | AGENT
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  appId String @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  refreshTokens RefreshToken[]
+
+  @@index([appId])
+  @@index([email])
+  @@map("admin_users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  userId String     @map("user_id")
+  user   AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Subscription {
+  id                String    @id @default(uuid())
+  stripeCustomerId  String    @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+  stripePriceId     String    @map("stripe_price_id")
+  status            String    // trialing | active | past_due | canceled | unpaid
+  currentPeriodEnd  DateTime  @map("current_period_end")
+  cancelAtPeriodEnd Boolean   @default(false) @map("cancel_at_period_end")
+  trialEndsAt       DateTime? @map("trial_ends_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  appId String @unique @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscriptions")
 }

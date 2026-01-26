@@ -11,6 +11,9 @@ import conversationsRouter from './routes/conversations.js';
 import pushTokenRouter from './routes/pushToken.js';
 import healthRouter from './routes/health.js';
 import adminRouter from './routes/admin.js';
+import authRouter from './routes/auth.js';
+import billingRouter from './routes/billing.js';
+import webhooksRouter from './routes/webhooks.js';
 import setupRouter from './routes/setup.js';
 
 const app: Express = express();
@@ -24,18 +27,28 @@ app.use(createCorsMiddleware());
 // Compression
 app.use(compression());
 
-// Body parsing with size limits
-app.use(express.json({ limit: '100kb' }));
-app.use(express.urlencoded({ extended: true, limit: '100kb' }));
-
 // Logging
 app.use(morgan('combined'));
 
 // Health check (no rate limiting)
 app.use('/health', healthRouter);
 
-// Admin routes with strict rate limiting (applied BEFORE auth)
-app.use('/admin', strictRateLimit, adminRouter);
+// Webhooks (must come BEFORE body parsing middleware for raw body access)
+// The webhook handler uses express.raw() internally
+app.use('/webhooks', webhooksRouter);
+
+// Body parsing with size limits (comes AFTER webhooks)
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// Auth routes (login, refresh, logout)
+app.use('/admin/auth', authRouter);
+
+// Billing routes with JWT authentication
+app.use('/admin/billing', billingRouter);
+
+// Admin routes with JWT authentication
+app.use('/admin', adminRouter);
 
 // Setup routes with strict rate limiting (applied BEFORE auth)
 app.use('/setup', strictRateLimit, setupRouter);
