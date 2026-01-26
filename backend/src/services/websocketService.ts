@@ -41,7 +41,11 @@ const HEARTBEAT_INTERVAL = 30000; // 30s
 const STALE_THRESHOLD = 90000; // 90s (3 missed heartbeats)
 
 export async function initWebSocket(server: Server) {
-  wss = new WebSocketServer({ server, path: '/v1/realtime' });
+  wss = new WebSocketServer({
+    server,
+    path: '/v1/realtime',
+    perMessageDeflate: false
+  });
 
   if (isRedisReady()) {
     try {
@@ -98,8 +102,11 @@ export async function initWebSocket(server: Server) {
   cleanupInterval = setInterval(cleanupStaleConnections, STALE_THRESHOLD);
 }
 
-export async function initAdminWebSocket(server: Server) {
-  adminWss = new WebSocketServer({ server, path: '/admin/realtime' });
+export async function initAdminWebSocket() {
+  adminWss = new WebSocketServer({
+    noServer: true,
+    perMessageDeflate: false
+  });
 
   adminWss.on('connection', async (ws, req) => {
     const connectionResult = await handleAdminConnection(ws, req);
@@ -136,6 +143,26 @@ export async function initAdminWebSocket(server: Server) {
       removeAdminClient(connectionId);
     });
   });
+}
+
+export function handleAdminUpgrade(
+  req: IncomingMessage,
+  socket: any,
+  head: Buffer
+): boolean {
+  if (!adminWss) {
+    return false;
+  }
+
+  const url = new URL(req.url || '', `http://${req.headers.host}`);
+  if (url.pathname !== '/admin/realtime') {
+    return false;
+  }
+
+  adminWss.handleUpgrade(req, socket, head, (ws) => {
+    adminWss?.emit('connection', ws, req);
+  });
+  return true;
 }
 
 async function handleConnection(
@@ -400,7 +427,7 @@ function removeClient(connectionId: string) {
     }
   }
   if (client) {
-    void removePresence(client.appId, client.deviceId);
+    void removePresence(client.appId, client.deviceId, connectionId);
     void broadcastPresenceChange(client.appId, client.deviceId, false);
   }
   connections.delete(connectionId);

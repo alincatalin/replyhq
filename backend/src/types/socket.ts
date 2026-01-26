@@ -1,4 +1,4 @@
-import { Socket } from 'socket.io';
+import { Socket, DefaultEventsMap } from 'socket.io';
 
 /**
  * Client socket data - populated during authentication
@@ -22,12 +22,12 @@ export interface AdminSocketData {
 /**
  * Client Socket type (extends Socket.IO Socket with our data)
  */
-export type ClientSocket = Socket<ClientToServerEvents, ServerToClientEvents, unknown, ClientSocketData>;
+export type ClientSocket = Socket<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, ClientSocketData>;
 
 /**
  * Admin Socket type (extends Socket.IO Socket with our data)
  */
-export type AdminSocket = Socket<AdminToServerEvents, ServerToAdminEvents, unknown, AdminSocketData>;
+export type AdminSocket = Socket<AdminToServerEvents, ServerToAdminEvents, DefaultEventsMap, AdminSocketData>;
 
 /**
  * Events sent FROM client TO server
@@ -49,6 +49,8 @@ export interface ServerToClientEvents {
   'agent:typing': (data: { conversation_id: string; is_typing: boolean }) => void;
   'conversation:joined': (data: { conversation_id: string; last_message_id?: string }) => void;
   'server:shutdown': (data: { message: string; reconnect_delay_ms: number }) => void;
+  'user:typing': (data: { conversation_id: string; device_id: string; is_typing: boolean }) => void;
+  'pong': () => void;
   'error': (data: { code: string; message?: string }) => void;
 }
 
@@ -80,6 +82,7 @@ export interface ServerToAdminEvents {
   'session:disconnect': (data: { connection_id: string; device_id: string; reason: string }) => void;
   'presence:change': (data: { app_id: string; device_id: string; is_online: boolean }) => void;
   'user:typing': (data: { conversation_id: string; device_id: string; is_typing: boolean }) => void;
+  'pong': () => void;
 }
 
 /**

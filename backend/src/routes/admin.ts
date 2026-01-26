@@ -1,51 +1,68 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, type IRouter } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
 import { createMessage } from '../services/messageService.js';
 import { getConversationPresence } from '../services/presenceService.js';
 import { config } from '../config/index.js';
+import { validateAdminAuth } from '../middleware/auth.js';
+import { verifyApiKey } from '../lib/apiKey.js';
 
-const router = express.Router();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-interface AdminAuth {
-  appId: string;
-  apiKey: string;
+/**
+ * Basic HTML sanitization to prevent XSS in admin dashboard
+ * Escapes HTML special characters
+ */
+function sanitizeHtml(html: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+  };
+  return html.replace(/[&<>"'/]/g, (char) => map[char] || char);
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      adminAuth?: AdminAuth;
-    }
-  }
-}
+const router: IRouter = express.Router();
 
 async function validateAdmin(req: Request, res: Response, next: NextFunction) {
-  const appId = req.query.app_id as string | undefined;
-  const apiKey = req.query.api_key as string | undefined;
+  // Get credentials from headers (set by validateAdminAuth middleware)
+  const { appId, apiKey } = req.adminAuth!;
 
-  if (!appId || !apiKey) {
-    return res.status(400).json({
-      error: 'Missing required parameters',
-      code: 'MISSING_PARAMS',
-      message: 'app_id and api_key are required',
+  try {
+    const app = await prisma.app.findUnique({
+      where: { id: appId },
+      select: { id: true, apiKeyHash: true },
+    });
+
+    if (!app) {
+      return res.status(403).json({
+        error: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid app_id',
+      });
+    }
+
+    // Verify API key against stored hash
+    const isValidKey = verifyApiKey(apiKey, app.apiKeyHash);
+
+    if (!isValidKey) {
+      return res.status(403).json({
+        error: 'Invalid credentials',
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid API key',
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin validation error:', error);
+    return res.status(500).json({
+      error: 'Authentication error',
+      code: 'AUTH_ERROR',
     });
   }
-
-  const app = await prisma.app.findUnique({ where: { id: appId } });
-  if (!app || app.apiKey !== apiKey) {
-    return res.status(403).json({
-      error: 'Invalid credentials',
-      code: 'INVALID_CREDENTIALS',
-      message: 'app_id or api_key is not valid',
-    });
-  }
-
-  req.adminAuth = { appId, apiKey };
-  next();
 }
 
 router.get('/', (_req, res) => {
@@ -57,7 +74,7 @@ router.get('/', (_req, res) => {
   res.sendFile(filePath);
 });
 
-router.get('/api/users', validateAdmin, async (req, res, next) => {
+router.get('/api/users', validateAdminAuth, validateAdmin, async (req, res, next) => {
   try {
     const { appId } = req.adminAuth!;
 
@@ -94,7 +111,7 @@ router.get('/api/users', validateAdmin, async (req, res, next) => {
           status: conv.status,
           updated_at: conv.updatedAt.toISOString(),
           created_at: conv.createdAt.toISOString(),
-          last_message: lastMessage?.body ?? null,
+          last_message: lastMessage?.body ? sanitizeHtml(lastMessage.body) : null,
           last_sender: lastMessage?.sender ?? null,
           last_message_at: lastMessage?.createdAt.toISOString() ?? null,
           is_online: presence.get(conv.deviceId) ?? false,
@@ -109,7 +126,7 @@ router.get('/api/users', validateAdmin, async (req, res, next) => {
   }
 });
 
-router.get('/api/conversations/:id/messages', validateAdmin, async (req, res, next) => {
+router.get('/api/conversations/:id/messages', validateAdminAuth, validateAdmin, async (req, res, next) => {
   try {
     const { appId } = req.adminAuth!;
     const conversationId = req.params.id;
@@ -147,7 +164,7 @@ router.get('/api/conversations/:id/messages', validateAdmin, async (req, res, ne
         id: message.id,
         local_id: message.localId,
         conversation_id: message.conversationId,
-        body: message.body,
+        body: sanitizeHtml(message.body),
         sender: message.sender,
         created_at: message.createdAt.toISOString(),
         status: message.status,
@@ -158,7 +175,7 @@ router.get('/api/conversations/:id/messages', validateAdmin, async (req, res, ne
   }
 });
 
-router.post('/api/conversations/:id/messages', validateAdmin, async (req, res, next) => {
+router.post('/api/conversations/:id/messages', validateAdminAuth, validateAdmin, async (req, res, next) => {
   try {
     const { appId } = req.adminAuth!;
     const conversationId = req.params.id;

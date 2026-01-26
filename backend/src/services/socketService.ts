@@ -28,6 +28,8 @@ const SESSION_TTL = 120; // 2 minutes
  * Initialize Socket.IO server with namespaces and middleware
  */
 export async function initSocketIO(server: HTTPServer): Promise<void> {
+  console.log('[Socket.IO] Initializing Socket.IO server...');
+
   io = new Server(server, {
     path: '/v1/socket.io',
     cors: {
@@ -36,6 +38,34 @@ export async function initSocketIO(server: HTTPServer): Promise<void> {
     pingInterval: 25000,
     pingTimeout: 60000,
     transports: ['websocket'],
+    serveClient: false,
+    // Completely disable WebSocket compression at engine.io level
+    // This prevents the Sec-WebSocket-Extensions header from being negotiated
+    perMessageDeflate: false,
+  });
+
+  console.log('[Socket.IO] Server instance created, checking attachment...');
+
+  // Verify Socket.IO is attached
+  if (io) {
+    console.log('[Socket.IO] Socket.IO server attached to HTTP server');
+  } else {
+    console.error('[Socket.IO] Failed to attach Socket.IO to HTTP server!');
+  }
+
+  console.log('[Socket.IO] Server created, attaching event listeners...');
+
+  // Log all connection attempts (before authentication)
+  io.on('connection_error', (error) => {
+    console.log('[Socket.IO] Connection error:', error.message, error.data);
+  });
+
+  io.on('error', (error) => {
+    console.log('[Socket.IO] IO error:', error);
+  });
+
+  io.on('connection', (socket) => {
+    console.log('[Socket.IO] New connection:', socket.id);
   });
 
   // Setup Redis adapter if available
@@ -67,10 +97,17 @@ function setupClientNamespace(): void {
   // Authentication middleware
   clientNs.use(async (socket: ClientSocket, next) => {
     try {
+      console.log('[Socket.IO Auth] Handshake:', {
+        auth: socket.handshake.auth,
+        query: socket.handshake.query,
+        url: socket.handshake.url,
+      });
+
       const { app_id, device_id, api_key } = socket.handshake.auth;
 
       // Validate parameters
       if (!app_id || !device_id || !api_key) {
+        console.log('[Socket.IO Auth] Missing params:', { app_id, device_id, api_key });
         return next(new Error('MISSING_PARAMS'));
       }
 
@@ -124,20 +161,20 @@ function setupClientNamespace(): void {
     await autoSubscribeToConversation(socket);
 
     // Register event handlers
-    socket.on('conversation:join', (conversationId: string, callback) => {
-      handleConversationJoin(socket, conversationId, callback);
+    socket.on('conversation:join', (payload: any, callback) => {
+      handleConversationJoin(socket, payload, callback);
     });
 
-    socket.on('conversation:leave', (conversationId: string) => {
-      handleConversationLeave(socket, conversationId);
+    socket.on('conversation:leave', (payload: any) => {
+      handleConversationLeave(socket, payload);
     });
 
-    socket.on('typing:start', (conversationId: string) => {
-      handleTyping(socket, conversationId, true);
+    socket.on('typing:start', (payload: any) => {
+      handleTyping(socket, payload, true);
     });
 
-    socket.on('typing:stop', (conversationId: string) => {
-      handleTyping(socket, conversationId, false);
+    socket.on('typing:stop', (payload: any) => {
+      handleTyping(socket, payload, false);
     });
 
     socket.on('ping', () => {
@@ -256,12 +293,30 @@ function setupAdminNamespace(): void {
 /**
  * Handle client conversation join with room subscription
  */
+function extractConversationId(payload: unknown): string | null {
+  if (typeof payload === 'string') {
+    return payload;
+  }
+  if (payload && typeof payload === 'object') {
+    const value = (payload as { conversation_id?: unknown }).conversation_id;
+    if (typeof value === 'string') {
+      return value;
+    }
+  }
+  return null;
+}
+
 async function handleConversationJoin(
   socket: ClientSocket,
-  conversationId: string,
+  payload: unknown,
   ack: (response: ConversationJoinResponse) => void
 ): Promise<void> {
   try {
+    const conversationId = extractConversationId(payload);
+    if (!conversationId) {
+      return ack({ success: false, error: 'MISSING_CONVERSATION_ID' });
+    }
+
     const { appId, deviceId } = socket.data;
 
     // Validate conversation exists and belongs to this app+device
@@ -325,9 +380,13 @@ async function handleConversationJoin(
  */
 async function handleConversationLeave(
   socket: ClientSocket,
-  conversationId: string
+  payload: unknown
 ): Promise<void> {
   try {
+    const conversationId = extractConversationId(payload);
+    if (!conversationId) {
+      return;
+    }
     socket.leave(`conversation:${conversationId}`);
     if (socket.data.conversationId === conversationId) {
       socket.data.conversationId = undefined;
@@ -343,9 +402,13 @@ async function handleConversationLeave(
  */
 function handleTyping(
   socket: ClientSocket,
-  conversationId: string,
+  payload: unknown,
   isTyping: boolean
 ): void {
+  const conversationId = extractConversationId(payload);
+  if (!conversationId) {
+    return;
+  }
   const { deviceId } = socket.data;
 
   // Broadcast to conversation room (excluding sender)
@@ -509,10 +572,16 @@ async function handleAdminMessageSend(
     }
 
     // Create message
-    const message = await createMessage(conversation_id, {
-      localId: local_id,
-      body,
-    }, appId, conversation.deviceId, 'agent');
+    const message = await createMessage(
+      conversation_id,
+      {
+        local_id,
+        body,
+      },
+      appId,
+      conversation.deviceId,
+      'agent'
+    );
 
     console.log(`[Admin] Sent message: ${message.id} to conversation: ${conversation_id}`);
 

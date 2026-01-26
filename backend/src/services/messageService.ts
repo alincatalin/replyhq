@@ -12,9 +12,9 @@ export interface MessageResponse {
   local_id: string;
   conversation_id: string;
   body: string;
-  sender: string;
+  sender: 'user' | 'agent' | 'system';
   created_at: string;
-  status: string;
+  status: 'QUEUED' | 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
 }
 
 export async function createMessage(
@@ -49,6 +49,7 @@ export async function createMessage(
         id: messageId,
         localId: input.local_id,
         conversationId,
+        appId, // Required for RLS
         body: input.body,
         sender,
         status: 'SENT',
@@ -130,8 +131,8 @@ function formatMessage(msg: {
     local_id: msg.localId,
     conversation_id: msg.conversationId,
     body: msg.body,
-    sender: msg.sender,
+    sender: msg.sender as MessageResponse['sender'],
     created_at: msg.createdAt.toISOString(),
-    status: msg.status,
+    status: msg.status as MessageResponse['status'],
   };
 }

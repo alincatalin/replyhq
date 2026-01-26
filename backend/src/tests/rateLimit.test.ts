@@ -12,6 +12,7 @@ describe('messageRateLimit', () => {
     mockReq = {
       appHeaders: {
         appId: 'app_123',
+        apiKey: 'key_123',
         deviceId: 'device_123',
       },
     };
@@ -54,6 +55,7 @@ describe('messageRateLimit', () => {
     const mockReq2: Partial<Request> = {
       appHeaders: {
         appId: 'app_123',
+        apiKey: 'key_123',
         deviceId: 'device_456',
       },
     };

@@ -56,6 +56,9 @@ class ConnectionManager(
         if (_state.value == ConnectionState.CONNECTED || _state.value == ConnectionState.CONNECTING) {
             return
         }
+        if (connectionJob?.isActive == true) {
+            return
+        }
 
         isPaused = false
         logDebug("connect() called; starting network monitoring")
@@ -122,19 +125,24 @@ class ConnectionManager(
     }
 
     private fun doConnect() {
+        println("[ConnectionManager] doConnect() called, isPaused=$isPaused")
         if (isPaused) return
+        if (connectionJob?.isActive == true) {
+            return
+        }
 
         _state.value = ConnectionState.CONNECTING
         logDebug("doConnect() -> CONNECTING")
 
+        connectionJob?.cancel()
         connectionJob = scope.launch {
-            try {
-                socketClient.connect()
-
-                // Monitor Socket.IO connection state and events
+            println("[ConnectionManager] About to call socketClient.connect()")
+            val stateJob = launch {
+                var hasStarted = false
                 socketClient.connectionState.collect { ioState ->
                     when (ioState) {
                         SocketIOConnectionState.CONNECTED -> {
+                            hasStarted = true
                             _state.value = ConnectionState.CONNECTED
                             resetBackoff()
                             logDebug("Socket.IO state CONNECTED -> state CONNECTED")
@@ -145,6 +153,9 @@ class ConnectionManager(
                             }
                         }
                         SocketIOConnectionState.DISCONNECTED -> {
+                            if (!hasStarted) {
+                                return@collect
+                            }
                             if (!isPaused && _state.value == ConnectionState.CONNECTED) {
                                 logDebug("Socket.IO DISCONNECTED from CONNECTED; scheduling reconnect")
                                 scheduleReconnect()
@@ -154,20 +165,28 @@ class ConnectionManager(
                             }
                         }
                         SocketIOConnectionState.CONNECTING -> {
+                            hasStarted = true
                             _state.value = ConnectionState.CONNECTING
                             logDebug("Socket.IO state CONNECTING -> state CONNECTING")
                         }
                         SocketIOConnectionState.RECONNECTING -> {
+                            hasStarted = true
                             _state.value = ConnectionState.RECONNECTING
                             logDebug("Socket.IO state RECONNECTING -> state RECONNECTING")
                         }
                     }
                 }
+            }
+            try {
+                socketClient.connect()
+                println("[ConnectionManager] socketClient.connect() returned successfully")
             } catch (e: Exception) {
                 if (!isPaused) {
                     logDebug("doConnect() failed: ${e.message}; scheduling reconnect")
                     scheduleReconnect()
                 }
+            } finally {
+                stateJob.cancel()
             }
         }
 
@@ -212,6 +231,9 @@ class ConnectionManager(
     }
 
     private fun startNetworkMonitoring() {
+        if (networkMonitorJob?.isActive == true) {
+            return
+        }
         connectivity.startMonitoring()
         logDebug("Network monitoring started")
 

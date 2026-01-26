@@ -10,6 +10,13 @@ interface PresenceInfo {
   lastSeen: string;
 }
 
+const memoryDeviceConnections = new Map<string, Set<string>>();
+const memoryConnectionInfo = new Map<string, PresenceInfo>();
+
+function getDeviceKey(appId: string, deviceId: string): string {
+  return `${appId}:${deviceId}`;
+}
+
 /**
  * Set presence for a specific connection (multi-connection support)
  * FIX: Per-connection tracking + device-level aggregation
@@ -20,6 +27,20 @@ export async function setPresence(
   connectionId: string
 ): Promise<void> {
   if (!isRedisReady()) {
+    const deviceKey = getDeviceKey(appId, deviceId);
+    const set = memoryDeviceConnections.get(deviceKey) ?? new Set<string>();
+    const wasEmpty = set.size === 0;
+    set.add(connectionId);
+    memoryDeviceConnections.set(deviceKey, set);
+    memoryConnectionInfo.set(connectionId, {
+      appId,
+      deviceId,
+      connectionId,
+      lastSeen: new Date().toISOString(),
+    });
+    if (wasEmpty) {
+      await broadcastPresenceChange(appId, deviceId, true);
+    }
     return;
   }
 
@@ -63,6 +84,18 @@ export async function removePresence(
   connectionId: string
 ): Promise<void> {
   if (!isRedisReady()) {
+    const deviceKey = getDeviceKey(appId, deviceId);
+    const set = memoryDeviceConnections.get(deviceKey);
+    if (set) {
+      set.delete(connectionId);
+      if (set.size === 0) {
+        memoryDeviceConnections.delete(deviceKey);
+        await broadcastPresenceChange(appId, deviceId, false);
+      } else {
+        memoryDeviceConnections.set(deviceKey, set);
+      }
+    }
+    memoryConnectionInfo.delete(connectionId);
     return;
   }
 
@@ -95,7 +128,8 @@ export async function removePresence(
  */
 export async function isOnline(appId: string, deviceId: string): Promise<boolean> {
   if (!isRedisReady()) {
-    return false;
+    const deviceKey = getDeviceKey(appId, deviceId);
+    return (memoryDeviceConnections.get(deviceKey)?.size ?? 0) > 0;
   }
 
   try {
@@ -117,7 +151,13 @@ export async function getPresence(
   deviceId: string
 ): Promise<PresenceInfo | null> {
   if (!isRedisReady()) {
-    return null;
+    const deviceKey = getDeviceKey(appId, deviceId);
+    const connectionIds = memoryDeviceConnections.get(deviceKey);
+    if (!connectionIds || connectionIds.size === 0) {
+      return null;
+    }
+    const firstId = connectionIds.values().next().value as string | undefined;
+    return firstId ? memoryConnectionInfo.get(firstId) ?? null : null;
   }
 
   try {
@@ -144,7 +184,8 @@ export async function getPresence(
  */
 export async function getActiveConnectionCount(appId: string, deviceId: string): Promise<number> {
   if (!isRedisReady()) {
-    return 0;
+    const deviceKey = getDeviceKey(appId, deviceId);
+    return memoryDeviceConnections.get(deviceKey)?.size ?? 0;
   }
 
   try {
@@ -167,7 +208,10 @@ export async function getConversationPresence(
   const result = new Map<string, boolean>();
 
   if (!isRedisReady()) {
-    deviceIds.forEach((id) => result.set(id, false));
+    deviceIds.forEach((id) => {
+      const deviceKey = getDeviceKey(appId, id);
+      result.set(id, (memoryDeviceConnections.get(deviceKey)?.size ?? 0) > 0);
+    });
     return result;
   }
 

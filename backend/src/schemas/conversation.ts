@@ -19,7 +19,10 @@ export const userSchema = z.object({
 
 export const createConversationSchema = z.object({
   user: userSchema.optional(),
-  device_context: deviceContextSchema.optional(),
+  device_context: z.preprocess(
+    (value) => (value === null ? undefined : value),
+    deviceContextSchema.optional()
+  ),
 });
 
 export type CreateConversationInput = z.infer<typeof createConversationSchema>;

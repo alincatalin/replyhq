@@ -65,9 +65,9 @@ object SocketIOParser {
             // 3. Extract ack ID (if digits before [ or {)
             var ackId: Int? = null
             if (index < data.length && data[index].isDigit()) {
-                val ackEnd = index + 1
+                var ackEnd = index + 1
                 while (ackEnd < data.length && data[ackEnd].isDigit()) {
-                    ackEnd + 1
+                    ackEnd++
                 }
                 val ackStr = data.substring(index, ackEnd)
                 ackId = ackStr.toIntOrNull()

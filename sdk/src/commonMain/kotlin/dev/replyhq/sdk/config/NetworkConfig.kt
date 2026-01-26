@@ -19,12 +19,12 @@ data class NetworkConfig(
 
     companion object {
         const val DEFAULT_BASE_URL = "https://api.replyhq.dev/v1"
-        const val DEFAULT_WS_URL = "wss://api.replyhq.dev/v1/socket.io"
+        const val DEFAULT_WS_URL = "wss://api.replyhq.dev/v1/socket.io/"
         const val SOCKET_IO_PATH = "/v1/socket.io"
 
         fun localhost(host: String = "localhost", port: Int = 3000): NetworkConfig {
             val httpBaseUrl = "http://$host:$port/v1"
-            val wsBaseUrl = "ws://$host:$port/v1/socket.io"
+            val wsBaseUrl = "ws://$host:$port/v1/socket.io/"
             return NetworkConfig(baseUrl = httpBaseUrl, websocketUrl = wsBaseUrl)
         }
     }

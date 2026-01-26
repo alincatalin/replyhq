@@ -50,13 +50,13 @@ fun App(startChatOpen: Boolean = false) {
         val scope = rememberCoroutineScope()
         val isInitialized by ChatSDK.isInitialized.collectAsState()
 
-        var appId by remember { mutableStateOf("YOUR_APP_ID") }
-        var apiKey by remember { mutableStateOf("YOUR_API_KEY") }
+        var appId by remember { mutableStateOf("37b72e23-e7a0-42da-89a7-679deea5e603") }
+        var apiKey by remember { mutableStateOf("key_cdd273e4d283482a813317e38648b390") }
         var userId by remember { mutableStateOf("user_123") }
         var userName by remember { mutableStateOf("Alex Rivera") }
         var userEmail by remember { mutableStateOf("alex@example.com") }
         var useLocalhost by remember { mutableStateOf(false) }
-        var localHost by remember { mutableStateOf("localhost") }
+        var localHost by remember { mutableStateOf("192.168.1.154") }
         var localPort by remember { mutableStateOf("3000") }
         var status by remember { mutableStateOf<String?>(null) }
         var chatOpen by remember(startChatOpen) { mutableStateOf(startChatOpen) }
@@ -104,7 +104,7 @@ fun App(startChatOpen: Boolean = false) {
                     OutlinedTextField(
                         value = localHost,
                         onValueChange = { localHost = it },
-                        label = { Text("Host (Android emulator: 10.0.2.2)") },
+                        label = { Text("Host (192.168.1.154)") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(

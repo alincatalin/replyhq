@@ -3,7 +3,9 @@ package dev.replyhq.sdk.data.remote
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.http.URLBuilder
 import io.ktor.websocket.Frame
+import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import kotlinx.coroutines.CancellationException
@@ -20,10 +22,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -40,9 +49,16 @@ class SocketIOClient(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    private val httpClient = HttpClient {
+        install(WebSockets) {
+            // Don't install any extensions to avoid OkHttp compression bug
+        }
+    }
+
     private var session: io.ktor.websocket.WebSocketSession? = null
     private var connectionJob: Job? = null
     private var pingJob: Job? = null
+    private var pendingConnectPacket: String? = null
 
     private val _events = MutableSharedFlow<SocketIOEvent>(replay = 0, extraBufferCapacity = 64)
     val events = _events.asSharedFlow()
@@ -66,15 +82,23 @@ class SocketIOClient(
         _connectionState.value = SocketIOConnectionState.CONNECTING
 
         try {
-            val httpClient = HttpClient {
-                install(WebSockets)
-            }
-
             val url = buildWebSocketUrl()
+            println("[SocketIOClient] Connecting to: $url")
 
-            httpClient.webSocket(url) { socketSession ->
-                session = socketSession
-                _connectionState.value = SocketIOConnectionState.CONNECTED
+            httpClient.webSocket(url) {
+                println("[SocketIOClient] WebSocket connected successfully")
+                session = this
+
+                // Send Socket.IO connection packet to /client namespace with auth
+                val authData = buildJsonObject {
+                    put("app_id", appId)
+                    put("device_id", deviceId)
+                    put("api_key", apiKey)
+                }
+                val encodedAuth = Json.encodeToString(JsonObject.serializer(), authData)
+                // Socket.IO CONNECT packet format (inside Engine.IO MESSAGE): 0<namespace>,<auth_json>
+                pendingConnectPacket = "0/client,$encodedAuth"
+                println("[SocketIOClient] Prepared Socket.IO CONNECT packet for /client namespace")
 
                 // Start ping loop
                 pingJob = scope.launch {
@@ -88,17 +112,23 @@ class SocketIOClient(
 
                 // Process incoming messages
                 try {
-                    for (frame in socketSession.incoming) {
+                    println("[SocketIOClient] Starting to process incoming frames...")
+                    for (frame in incoming) {
+                        println("[SocketIOClient] Received frame: $frame")
                         if (frame is Frame.Text) {
                             val text = frame.readText()
+                            println("[SocketIOClient] Received text: $text")
                             handleFrame(text)
                         }
                     }
+                    println("[SocketIOClient] Incoming frame loop ended")
                 } catch (e: CancellationException) {
-                    // Connection cancelled
+                    println("[SocketIOClient] Connection cancelled: ${e.message}")
                 } catch (e: Exception) {
-                    // Connection error
+                    println("[SocketIOClient] Connection error: ${e.message}")
+                    e.printStackTrace()
                 } finally {
+                    println("[SocketIOClient] WebSocket session closing")
                     session = null
                     pingJob?.cancel()
                     _connectionState.value = SocketIOConnectionState.DISCONNECTED
@@ -106,6 +136,8 @@ class SocketIOClient(
                 }
             }
         } catch (e: Exception) {
+            println("[SocketIOClient] Connection failed: ${e.message}")
+            e.printStackTrace()
             _connectionState.value = SocketIOConnectionState.DISCONNECTED
             _events.emit(SocketIOEvent.Disconnected)
             throw e
@@ -127,6 +159,7 @@ class SocketIOClient(
      */
     fun close() {
         scope.coroutineContext.job.cancel()
+        httpClient.close()
     }
 
     /**
@@ -139,10 +172,16 @@ class SocketIOClient(
             when (engineType) {
                 '0' -> {
                     // Engine OPEN - receive server config
+                    pendingConnectPacket?.let { connectPacket ->
+                        session?.send(Frame.Text("4$connectPacket"))
+                        println("[SocketIOClient] Sent Socket.IO CONNECT packet after Engine OPEN")
+                        pendingConnectPacket = null
+                    }
                 }
 
                 '2' -> {
                     // Engine PING - respond with pong
+                    session?.send(Frame.Text("3"))
                 }
 
                 '3' -> {
@@ -197,6 +236,7 @@ class SocketIOClient(
                     code = "CONNECT_ERROR",
                     message = packet.data?.toString()
                 )
+                println("[SocketIOClient] CONNECT_ERROR: ${error.message ?: ""}")
                 _events.emit(error)
             }
 
@@ -215,7 +255,7 @@ class SocketIOClient(
 
             // Socket.IO event format: [\"eventName\", eventData...]
             val eventArray = data.jsonArray
-            if (eventArray.size < 1) return
+            if (eventArray.isEmpty()) return
 
             val eventName = eventArray[0].jsonPrimitive.content
             val eventData = if (eventArray.size > 1) eventArray[1] else null
@@ -416,9 +456,19 @@ class SocketIOClient(
     }
 
     /**
-     * Build WebSocket URL with query parameters
+     * Build WebSocket URL with query parameters for Socket.IO
      */
     private fun buildWebSocketUrl(): String {
-        return "$baseUrl?EIO=4&transport=websocket"
+        // Socket.IO URL format: /v1/socket.io/?EIO=4&transport=websocket
+        val normalizedBaseUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        val urlBuilder = URLBuilder(normalizedBaseUrl)
+        urlBuilder.parameters.apply {
+            append("EIO", "4")  // Engine.IO protocol version
+            append("transport", "websocket")
+        }
+        val finalUrl = urlBuilder.buildString()
+        println("[SocketIOClient] Base URL: $baseUrl")
+        println("[SocketIOClient] Final Socket.IO URL: $finalUrl")
+        return finalUrl
     }
 }

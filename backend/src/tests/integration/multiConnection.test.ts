@@ -425,7 +425,7 @@ describe('Multi-Connection Presence Scenarios', () => {
 
       // Get conversation presence
       const presenceSpy = vi.mocked(presenceService.getConversationPresence);
-      const result = await presenceService.getConversationPresence('conv_123');
+      const result = await presenceService.getConversationPresence(appId, [deviceId]);
 
       expect(presenceSpy).toHaveBeenCalled();
       expect(result).toBeDefined();

@@ -5,7 +5,10 @@ import { deviceContextSchema } from './conversation.js';
 export const createMessageSchema = z.object({
   local_id: z.string().uuid(),
   body: z.string().min(1).max(config.message.maxLength),
-  device_context: deviceContextSchema.optional(),
+  device_context: z.preprocess(
+    (value) => (value === null ? undefined : value),
+    deviceContextSchema.optional()
+  ),
 });
 
 export const getMessagesQuerySchema = z.object({

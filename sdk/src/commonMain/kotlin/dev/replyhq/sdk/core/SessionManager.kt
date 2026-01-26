@@ -40,15 +40,16 @@ class SessionManager(
     }
     
     suspend fun setUser(user: ChatUser): Result<Conversation> {
+        println("[SessionManager] setUser() called with user: ${user.id}")
         val previousUserId = preferences.userId
-        
+
         if (previousUserId != null && previousUserId != user.id) {
             endSession()
         }
-        
+
         _currentUser.value = user
         preferences.userId = user.id
-        
+
         return startOrContinueConversation(user)
     }
     
