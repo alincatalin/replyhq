@@ -16,6 +16,7 @@ import billingRouter from './routes/billing.js';
 import webhooksRouter from './routes/webhooks.js';
 import onboardingRouter from './routes/onboarding.js';
 import docsRouter from './routes/docs.js';
+import analyticsRouter from './routes/analytics.js';
 import setupRouter from './routes/setup.js';
 
 const app: Express = express();
@@ -54,6 +55,9 @@ app.use('/admin/onboarding', onboardingRouter);
 
 // Documentation routes with JWT authentication
 app.use('/admin/docs', docsRouter);
+
+// Analytics routes with JWT authentication
+app.use('/admin/analytics', analyticsRouter);
 
 // Admin routes with JWT authentication
 app.use('/admin', adminRouter);
