@@ -15,6 +15,7 @@ import {
 import { createMessage } from './messageService.js';
 import * as presenceService from './presenceService.js';
 import * as deliveryReceiptService from './deliveryReceiptService.js';
+import { initializeTestConsole } from './testConsoleService.js';
 
 let io: Server;
 let clientNs: Namespace<any, any>;
@@ -86,6 +87,9 @@ export async function initSocketIO(server: HTTPServer): Promise<void> {
   // Setup admin namespace
   adminNs = io.of('/admin');
   setupAdminNamespace();
+
+  // Setup test console namespace for admin dashboard
+  initializeTestConsole(io);
 
   console.log('Socket.IO server initialized on /v1/socket.io');
 }

@@ -20,6 +20,7 @@ model App {
   devices       Device[]
   adminUsers    AdminUser[]
   subscription  Subscription?
+  onboardingState OnboardingState?
 
   @@map("apps")
 }
@@ -140,4 +141,24 @@ model Subscription {
   @@index([stripeCustomerId])
   @@index([status])
   @@map("subscriptions")
+}
+
+model OnboardingState {
+  id              String   @id @default(uuid())
+  appId           String   @unique @map("app_id")
+
+  platform        String?  // ios, android, react-native, flutter
+  useCase         String?  // support, sales, notifications, community
+  sdkInstalled    Boolean  @default(false) @map("sdk_installed")
+  firstMessageSent Boolean @default(false) @map("first_message_sent")
+  userIdentified  Boolean  @default(false) @map("user_identified")
+  teamInvited     Boolean  @default(false) @map("team_invited")
+
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  app             App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_states")
 }
