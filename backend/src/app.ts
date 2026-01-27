@@ -2,6 +2,7 @@ import express, { Express } from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import path from 'path';
 import { validateHeaders } from './middleware/headers.js';
 import { validateAppId } from './middleware/appValidator.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -61,6 +62,15 @@ app.use('/admin/analytics', analyticsRouter);
 
 // Admin routes with JWT authentication
 app.use('/admin', adminRouter);
+
+// Serve static files for admin dashboard (HTML, CSS, JS)
+// IMPORTANT: This must come AFTER admin API routes so /admin/api/* routes take precedence
+// Using relative path from dist directory: dist/../public = public
+app.use('/admin', express.static(path.join(process.cwd(), 'backend/public'), {
+  maxAge: '1h', // Cache static files for 1 hour
+  etag: true,
+  lastModified: true
+}));
 
 // Setup routes with strict rate limiting (applied BEFORE auth)
 app.use('/setup', strictRateLimit, setupRouter);

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyHQ | User Engagement Built for Developers</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #DC2626;
+            /* Slightly brighter red for better readability */
+            --primary-glow: rgba(220, 38, 38, 0.4);
+            --bg: #09090b;
+            /* Zinc-950 equivalent */
+            --surface: #18181b;
+            /* Zinc-900 */
+            --surface-highlight: #27272a;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #F4F4F5;
+            --text-dim: #A1A1AA;
+            --code-bg: #111;
+            --success: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Typography Utilities */
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .text-dim {
+            color: var(--text-dim);
+        }
+
+        .label {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: inline-block;
+            letter-spacing: 1px;
+            background: rgba(220, 38, 38, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
+        /* Navigation */
+        nav {
+            padding: 2rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            transform: rotate(45deg);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #b91c1c;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 6rem 0;
+            text-align: left;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 6vw, 5rem);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -2px;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to bottom right, #fff, #aaa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            max-width: 580px;
+            margin-bottom: 2.5rem;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Tech Stack Strip */
+        .tech-stack {
+            display: flex;
+            gap: 2rem;
+            margin-top: 4rem;
+            opacity: 0.5;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+            align-items: center;
+        }
+
+        .tech-stack span {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        /* Feature Sections */
+        .section {
+            padding: 6rem 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Code Window Styling */
+        .code-window {
+            background: var(--code-bg);
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            padding: 1rem;
+            color: #d4d4d4;
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.5rem;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot.r {
+            background: #ef4444;
+        }
+
+        .dot.y {
+            background: #eab308;
+        }
+
+        .dot.g {
+            background: #22c55e;
+        }
+
+        .syntax-k {
+            color: #c586c0;
+        }
+
+        /* Keyword */
+        .syntax-s {
+            color: #ce9178;
+        }
+
+        /* String */
+        .syntax-c {
+            color: #6a9955;
+        }
+
+        /* Comment */
+        .syntax-f {
+            color: #dcdcaa;
+        }
+
+        /* Function */
+        .syntax-v {
+            color: #9cdcfe;
+        }
+
+        /* Variable */
+
+        /* Feature Highlights */
+        .feature-h2 {
+            font-size: 2.2rem;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+
+        .feature-p {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .feature-list li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            color: var(--text-dim);
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* The 3-Tap Rule Section */
+        .three-tap {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            text-align: center;
+            margin: 4rem 0;
+            border: 1px solid var(--border);
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            text-align: left;
+            padding: 2rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: 0.2s;
+        }
+
+        .step-card:hover {
+            border-color: var(--primary);
+        }
+
+        .step-num {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--surface-highlight);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Pricing */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .pricing-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(220, 38, 38, 0.1);
+            position: relative;
+        }
+
+        .badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 1rem 0;
+            letter-spacing: -1px;
+        }
+
+        .price span {
+            font-size: 1rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .plan-features {
+            margin: 2rem 0;
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .plan-features li {
+            margin-bottom: 0.8rem;
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            display: flex;
+            gap: 8px;
+        }
+
+        .plan-features li svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text);
+            flex-shrink: 0;
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 0;
+            border-top: 1px solid var(--border);
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 3rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                order: -1;
+            }
+
+            /* Visuals first on mobile */
+            .nav-links {
+                display: none;
+            }
+
+            /* Simplified nav for mobile */
+            .tech-stack {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <nav>
+            <a href="#" style="text-decoration: none; color: inherit;">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <div>REPLY<span class="text-primary">HQ</span></div>
+                </div>
+            </a>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="https://docs.replyhq.dev" class="nav-link">Docs</a>
+                <a href="#join" class="btn btn-outline" style="padding: 0.5rem 1rem;">Login</a>
+                <a href="#join" class="btn btn-primary" style="padding: 0.5rem 1rem;">Get Access</a>
+            </div>
+        </nav>
+
+        <header class="hero">
+            <div class="hero-content">
+                <span class="label">// NATIVE USER ENGAGEMENT</span>
+                <h1>Talk to Your Users.<br>Without the Overhead.</h1>
+                <p>Native chat, direct user connection, and smart announcements built for mobile-first teams. Get full
+                    context with every message—device logs, breadcrumbs, and screenshots—all from a lightweight SDK.</p>
+
+                <div class="hero-btns">
+                    <a href="#pricing" class="btn btn-primary">Start Building Free</a>
+                    <a href="#features" class="btn btn-outline">Read the Docs</a>
+                </div>
+
+                <div class="tech-stack">
+                    <span class="mono" style="color: var(--primary); opacity: 1;">SDK SUPPORT:</span>
+                    <span>React Native</span>
+                    <span>Flutter</span>
+                    <span>Swift (iOS)</span>
+                    <span>Kotlin (Android)</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="three-tap">
+            <h2 class="feature-h2" style="text-align: center;">The 3-Tap Rule</h2>
+            <p class="feature-p" style="max-width: 600px; margin: 0 auto;">Most support tools require 7+ steps to report
+                a bug. We do it in 3. Lower friction means more high-quality reports.</p>
+
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-num">01</div>
+                    <div class="step-title">See</div>
+                    <p class="text-dim">User shakes phone or taps "Help" when they encounter an issue.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">02</div>
+                    <div class="step-title">Type</div>
+                    <p class="text-dim">User types a quick message. Screenshot is auto-attached.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">03</div>
+                    <div class="step-title">Context</div>
+                    <p class="text-dim">You receive the message + device logs + breadcrumbs instantly.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="features">
+            <div class="feature-grid">
+                <div class="feature-info">
+                    <span class="label">01. CONTEXT AWARENESS</span>
+                    <h2 class="feature-h2">Stop asking "What device are you on?"</h2>
+                    <p class="feature-p">Our SDK is invisible (< 1MB) until needed. When a user messages you, we
+                            auto-attach the metadata you actually need to fix the bug.</p>
+                            <ul class="feature-list" style="list-style: none;">
+                                <li>Device Model & OS Version</li>
+                                <li>App Version & Build Number</li>
+                                <li>Last 5 Actions Breadcrumb Log</li>
+                                <li>Offline Store & Sync</li>
+                            </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="code-window">
+                        <div class="code-header">
+                            <div class="dot r"></div>
+                            <div class="dot y"></div>
+                            <div class="dot g"></div>
+                        </div>
+                        <span class="syntax-c">// Incoming Ticket Payload</span><br>
+                        <span class="syntax-k">const</span> <span class="syntax-v">ticket</span> = {<br>
+                        &nbsp;&nbsp;<span class="syntax-s">"user_id"</span>: <span class="syntax-s">"u_8821"</span>,<br>
+                        &nbsp;&nbsp;<span class="syntax-s">"message"</span>: <span class="syntax-s">"App crashed on
+                            export"</span>,<br>
+                        &nbsp;&nbsp;<span class="syntax-s">"context"</span>: {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"device"</span>: <span class="syntax-s">"iPhone
+                            15 Pro"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"os"</span>: <span class="syntax-s">"iOS
+                            17.2"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"battery"</span>: <span
+                            class="syntax-s">"12%"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"breadcrumbs"</span>: [<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"View: Settings"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"Tap: Export_PDF"</span>,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="syntax-s">"Error: Memory_Limit"</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;]<br>
+                        &nbsp;&nbsp;}<br>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="feature-grid">
+                <div class="feature-card" style="display: flex; align-items: center; justify-content: center;">
+                    <div
+                        style="background: #000; border: 1px solid #333; width: 280px; border-radius: 20px; padding: 15px; font-family: system-ui;">
+                        <div style="font-size: 10px; color: #666; text-align: center; margin-bottom: 10px;">Today 9:41
+                            AM</div>
+
+                        <div
+                            style="background: #222; padding: 8px 12px; border-radius: 12px 12px 12px 2px; margin-bottom: 10px; font-size: 12px; max-width: 80%;">
+                            Hey, I can't find the logout button?
+                        </div>
+
+                        <div style="text-align: right;">
+                            <div
+                                style="background: var(--primary); color: white; padding: 8px 12px; border-radius: 12px 12px 2px 12px; display: inline-block; font-size: 12px; text-align: left;">
+                                It's in Settings > Account. <br>
+                                <span style="font-size: 10px; opacity: 0.8; margin-top: 4px; display: block;">Sent via
+                                    Push Notification</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-info">
+                    <span class="label">02. THE LOOP</span>
+                    <h2 class="feature-h2">Don't lose them when they close the app.</h2>
+                    <p class="feature-p">Users don't stay in your "Support" view waiting for a reply. We solve the async
+                        problem natively.</p>
+                    <ul class="feature-list" style="list-style: none;">
+                        <li><strong>Push Fallback:</strong> If the user leaves the app, your chat reply automatically
+                            becomes a Push Notification.</li>
+                        <li><strong>Slash Snippets:</strong> Type <code>/refund</code> or <code>/reset</code> to fire
+                            pre-written technical replies instantly.</li>
+                        <li><strong>Screenshot Annotation:</strong> Users can draw on images before sending.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="feature-grid">
+                <div class="feature-info">
+                    <span class="label">03. OUTBOUND</span>
+                    <h2 class="feature-h2">Ship updates. Tell users. (Cleanly).</h2>
+                    <p class="feature-p">Forget coding custom "What's New" modals for every release. Just upload a
+                        Markdown file, and we render a native changelog for you.</p>
+                    <div style="margin-top: 2rem;">
+                        <h4 style="margin-bottom: 1rem; color: white;">Also included:</h4>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <span
+                                style="background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 4px; font-size: 0.9rem; border: 1px solid var(--border);">In-App
+                                Banners</span>
+                            <span
+                                style="background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 4px; font-size: 0.9rem; border: 1px solid var(--border);">Micro-Surveys</span>
+                            <span
+                                style="background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 4px; font-size: 0.9rem; border: 1px solid var(--border);">Feature
+                                Voting</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="code-window">
+                        <span class="syntax-c">// changelog.md</span><br>
+                        <span class="syntax-k"># v2.4.0 - Dark Mode & Speed</span><br><br>
+                        <span class="syntax-v">## New Features</span><br>
+                        - Added true OLED black mode<br>
+                        - 2x faster export speeds<br><br>
+                        <span class="syntax-v">## Bug Fixes</span><br>
+                        - Fixed crash on older Androids<br><br>
+                        <span class="syntax-c">// Renders natively in your app -></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="pricing">
+            <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+                <span class="label">Predictable Pricing</span>
+                <h2 class="feature-h2">Simple, Flat-Rate Pricing</h2>
+                <p class="feature-p">No hidden fees. No per-message charges. Pay one predictable rate and communicate
+                    with all your users without limits.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Indie</h3>
+                    <div class="price">$29<span>/mo</span></div>
+                    <p class="text-dim" style="font-size: 0.9rem; margin-bottom: 1.5rem;">Perfect for solo devs and side
+                        projects.</p>
+                    <ul class="plan-features">
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Up to 5k MAU</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> 1 Team Seat</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> 30-Day Message History</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Core SDK Features</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline" style="width: 100%; justify-content: center;">Start Trial</a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="badge">Most Popular</div>
+                    <h3>Growth</h3>
+                    <div class="price text-primary">$79<span>/mo</span></div>
+                    <p class="text-dim" style="font-size: 0.9rem; margin-bottom: 1.5rem;">For scaling apps with active
+                        users.</p>
+                    <ul class="plan-features">
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Up to 50k MAU</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> 3 Team Seats</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Unlimited History</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Remove Branding</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Get Started</a>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Pro</h3>
+                    <div class="price">$149<span>/mo</span></div>
+                    <p class="text-dim" style="font-size: 0.9rem; margin-bottom: 1.5rem;">For established teams.</p>
+                    <ul class="plan-features">
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Unlimited MAU (Fair Use)</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Unlimited Seats</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Priority Support</li>
+                        <li><svg viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg> Custom Data Retention</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline" style="width: 100%; justify-content: center;">Contact Sales</a>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <div style="margin-bottom: 2rem;">
+                <div class="logo" style="justify-content: center; margin-bottom: 1rem;">
+                    <div class="logo-icon"></div>
+                    <div>REPLY<span class="text-primary">HQ</span></div>
+                </div>
+                <p>&copy; 2026 ReplyHQ.dev</p>
+                <p>Built for builders.</p>
+            </div>
+            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 0.85rem;">
+                <a href="#" style="color: var(--text-dim); text-decoration: none;">Privacy</a>
+                <a href="#" style="color: var(--text-dim); text-decoration: none;">Terms</a>
+                <a href="#" style="color: var(--text-dim); text-decoration: none;">Twitter</a>
+                <a href="#" style="color: var(--text-dim); text-decoration: none;">GitHub</a>
+            </div>
+        </footer>
+    </div>
+
+    
+    <!-- Load Socket.IO client from CDN -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <!-- Load shared utilities -->
+    <script src="/admin/js/auth.js"></script>
+    <script src="/admin/js/api.js"></script>
+    <script src="/admin/js/socket.js"></script>
+    <script src="/admin/js/utils.js"></script>
+    
+    <!-- Auth protection -->
+    <script>
+        // Redirect to login if not authenticated
+        if (!requireAuth()) {
+            // requireAuth() handles redirect
+        }
+    </script>
+    
+</body>
+
+</html>
