@@ -459,6 +459,55 @@
             box-shadow: 0 4px 15px var(--primary-glow);
         }
 
+        /* Typing indicator animation */
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0.5rem 0;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            animation: typing-bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing-bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Message status indicator */
+        .message-status {
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+        }
+
+        .message-status.status-failed {
+            color: var(--primary);
+        }
+
+        .message-status.status-normal {
+            color: var(--text-dim);
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 display: none;
@@ -759,6 +808,10 @@
         }
     </script>
     
+    
+    <!-- Page-specific chat functionality -->
+    <script src="/admin/js/chat.js"></script>
+
 </body>
 
 </html>
