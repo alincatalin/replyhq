@@ -448,13 +448,12 @@
                         <p>View your current plan and tracking usage.</p>
                     </div>
 
-                    <div class="info-group">
-                        <label class="info-label">Current Plan</label>
-                        <div class="info-value">Pro Plan <span
-                                style="font-size: 0.8em; color: var(--success); background: rgba(34, 197, 94, 0.1); padding: 2px 8px; border-radius: 4px; margin-left: 8px;">Active</span>
+                    <div id="billing-container">
+                        <!-- Dynamically populated by settings.js -->
+                        <div class="info-group">
+                            <label class="info-label">Current Plan</label>
+                            <div class="info-value">Loading...</div>
                         </div>
-                        <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 4px;">Renews on Feb 26, 2026
-                        </p>
                     </div>
 
                     <!-- Usage Bars -->
@@ -550,7 +549,10 @@
             // requireAuth() handles redirect
         }
     </script>
-    
+
+    <!-- Page-specific settings functionality -->
+    <script src="/admin/js/settings.js"></script>
+
 </body>
 
 </html>
