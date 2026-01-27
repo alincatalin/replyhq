@@ -921,17 +921,17 @@ Integrate pages that have complete backend support.
 - Search and filter conversations
 
 **Acceptance Criteria:**
-- [ ] Conversation list displays real data from backend
-- [ ] Last message preview shows actual last message
-- [ ] Online/offline status indicators work
-- [ ] New messages update list in real-time
-- [ ] Clicking conversation navigates to chat page with correct ID
+- [x] Conversation list displays real data from backend
+- [x] Last message preview shows actual last message
+- [x] Online/offline status indicators work
+- [x] New messages update list in real-time
+- [x] Clicking conversation navigates to chat page with correct ID
 
 **Files to Create:**
-- `backend/public/js/dashboard.js`
+- [x] `backend/public/js/dashboard.js`
 
 **Files to Modify:**
-- `backend/public/dashboard.html` - Import dashboard.js, add data-* attributes for DOM manipulation
+- [x] `backend/public/dashboard.html` - Import dashboard.js, add data-* attributes for DOM manipulation
 
 ---
 
