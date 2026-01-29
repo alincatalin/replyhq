@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ReplyHQ</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #DC2626;
+            --primary-glow: rgba(220, 38, 38, 0.4);
+            --bg: #09090b;
+            --surface: #18181b;
+            --surface-highlight: #27272a;
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #F4F4F5;
+            --text-dim: #A1A1AA;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.75rem;
+            letter-spacing: -0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            box-shadow: 0 0 12px var(--primary);
+            transform: rotate(45deg);
+        }
+
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .logo-subtitle {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .card-subtitle {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #b91c1c;
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--error);
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .footer-text a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo">
+                <span class="logo-icon"></span>
+                Reply<span class="text-primary">HQ</span>
+            </div>
+            <div class="logo-subtitle">Admin Dashboard</div>
+        </div>
+
+        <div class="login-card">
+            <h1 class="card-title">Welcome back</h1>
+            <p class="card-subtitle">Sign in to your account to continue</p>
+
+            <div id="error-message" class="error-message"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        class="form-input"
+                        placeholder="admin@example.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <button type="submit" id="login-btn" class="btn">
+                    Sign in
+                </button>
+            </form>
+
+            <div class="footer-text">
+                Don't have an account? Contact your administrator.
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin/js/auth.js"></script>
+    <script src="/admin/js/utils.js"></script>
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const errorMessage = document.getElementById('error-message');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+
+        // Check if already logged in
+        if (localStorage.getItem('accessToken')) {
+            // Check if there's a return URL
+            const returnUrl = sessionStorage.getItem('returnUrl');
+            sessionStorage.removeItem('returnUrl');
+            window.location.href = returnUrl || '/admin/dashboard.html';
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            // Hide previous errors
+            errorMessage.classList.remove('show');
+            errorMessage.textContent = '';
+
+            // Disable form
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner"></span>Signing in...';
+
+            try {
+                await login(email, password);
+
+                // Login successful, redirect
+                const returnUrl = sessionStorage.getItem('returnUrl');
+                sessionStorage.removeItem('returnUrl');
+                window.location.href = returnUrl || '/admin/dashboard.html';
+            } catch (error) {
+                console.error('Login error:', error);
+
+                errorMessage.textContent = error.message || 'Invalid email or password. Please try again.';
+                errorMessage.classList.add('show');
+
+                // Re-enable form
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign in';
+
+                // Focus password field
+                passwordInput.focus();
+                passwordInput.select();
+            }
+        });
+
+        // Allow Enter key in password field
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginForm.requestSubmit();
+            }
+        });
+    </script>
+</body>
+
+</html>

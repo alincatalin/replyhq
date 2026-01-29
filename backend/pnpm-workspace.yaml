@@ -1,0 +1,27 @@
+onlyBuiltDependencies:
+  - ','
+  - /
+  - '@'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - a
+  - b
+  - c
+  - d
+  - e
+  - esbuild
+  - f
+  - g
+  - i
+  - j
+  - l
+  - m
+  - n
+  - o
+  - p
+  - prisma
+  - protobufjs
+  - r
+  - s
+  - t
+  - u

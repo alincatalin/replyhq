@@ -6,4 +6,239 @@ Feature: ReplyHQ SDK v1.0.0
 - This is a Kotlin Multiplatform project with composeApp (Android), iosApp, and sdk modules
 - Use Jetpack Compose for Android UI, Compose Multiplatform for shared UI
 - Follow existing Gradle conventions in build.gradle.kts files
+- Dependencies are defined in gradle/libs.versions.toml with version catalog
+- SDK dependencies: kotlinx-coroutines, kotlinx-serialization, ktor-client, sqldelight, kotlinx-datetime
+- Platform actuals: use ktor-client-okhttp (Android), ktor-client-darwin (iOS), sqldelight-android-driver/native-driver
+- SDK permissions must be declared in sdk/src/androidMain/AndroidManifest.xml (merged with app manifest)
+- SQLDelight: Do NOT use `generateAsync.set(true)` - NativeSqliteDriver doesn't support async schemas
+- SQLDelight .sq files go in: sdk/src/commonMain/sqldelight/<package-path>/
+- Store timestamps as Long (epoch millis) in SQLite; use Instant.toEpochMilliseconds() for conversion
+---
+
+## Wed Jan 21 2026 - SDK-001
+Thread: https://ampcode.com/threads/T-019be18a-e472-7442-8d73-cefb3d561f6a
+- Implemented project scaffolding and Gradle setup for the SDK module
+- Added all core KMP dependencies to libs.versions.toml and sdk/build.gradle.kts
+- Created package structure: dev.replyhq.sdk with config/, ui/, data/, core/, platform/ directories
+- Moved Platform expect/actual files to platform/ subdirectory
+- Files changed: gradle/libs.versions.toml, sdk/build.gradle.kts, Platform.kt files
+- **Learnings for future iterations:**
+  - Use serialization plugin: `alias(libs.plugins.kotlinSerialization)` in build.gradle.kts
+  - Android uses ktor-client-okhttp engine, iOS uses ktor-client-darwin engine
+  - SQLDelight uses android-driver and native-driver for platform-specific implementations
+  - Build with `./gradlew :sdk:build` to verify all targets compile
+---
+
+## Wed Jan 21 2026 - SDK-002
+Thread: https://ampcode.com/threads/T-019be18f-e299-7709-84b9-8e96d4d74423
+- Implemented platform expect/actual declarations for Platform, Connectivity, PushNotifications, and Preferences
+- Files changed:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/Platform.kt (updated to use expect val)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/Connectivity.kt (new)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/PushNotifications.kt (new)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/platform/Preferences.kt (new)
+  - sdk/src/androidMain/kotlin/dev/replyhq/sdk/platform/* (actual implementations)
+  - sdk/src/iosMain/kotlin/dev/replyhq/sdk/platform/* (actual implementations)
+  - sdk/src/androidMain/AndroidManifest.xml (added ACCESS_NETWORK_STATE and INTERNET permissions)
+- **Learnings for future iterations:**
+  - SDK libraries need to declare permissions in their own AndroidManifest.xml - they get merged with app manifest
+  - For iOS network monitoring: use `nw_path_monitor` from platform.Network
+  - For iOS preferences: use `NSUserDefaults.standardUserDefaults`
+  - For Android connectivity: use `ConnectivityManager.NetworkCallback` for modern API
+  - expect/actual classes show Beta warnings; can use `-Xexpect-actual-classes` flag to suppress
+---
+
+## Wed Jan 21 2026 - SDK-003
+Thread: https://ampcode.com/threads/T-019be193-44d0-7218-a417-845bc2f19d52
+- Implemented all configuration data classes for the SDK
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatConfig.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatUser.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatTheme.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/ChatBehavior.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/NetworkConfig.kt
+- **Learnings for future iterations:**
+  - ChatUser uses @Serializable for API transmission, other config classes are app-side only
+  - Use Long for color values (e.g., 0xFF007AFF) for cross-platform compatibility
+  - kotlin.time.Duration works well for timeout configuration with Duration.Companion extensions
+  - Enums for DarkMode (LIGHT/DARK/SYSTEM), BubblePosition, and RetryPolicy provide type safety
+---
+
+## Wed Jan 21 2026 - SDK-004
+Thread: https://ampcode.com/threads/T-019be195-1c86-72f2-a3b2-2b7303c314ac
+- Implemented core data models: Conversation, Message, and DeviceContext
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/models/Conversation.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/models/Message.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/models/DeviceContext.kt
+- **Learnings for future iterations:**
+  - Use @SerialName for API field naming (snake_case) while keeping Kotlin idiomatic camelCase
+  - kotlinx.datetime.Instant is the proper type for timestamps - works cross-platform
+  - MessageStatus enum is local-only (no @SerialName needed) for UI state tracking
+  - ConversationStatus and SenderType need @SerialName to match API contract
+  - Message.id is nullable (null when pending/unsent), localId is always present
+---
+
+## Wed Jan 21 2026 - SDK-005
+Thread: https://ampcode.com/threads/T-019be197-4081-70a9-a72a-9c78eb4523fb
+- Implemented SQLDelight database schema for local persistence
+- Files created/changed:
+  - sdk/build.gradle.kts (added SQLDelight plugin and database config)
+  - sdk/src/commonMain/sqldelight/dev/replyhq/sdk/data/local/Chat.sq (schema + queries)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/local/DatabaseDriverFactory.kt (expect class)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/local/ChatDatabaseWrapper.kt (type-safe wrapper)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/local/MessageQueue.kt (offline queue operations)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/local/SdkPreferences.kt (SDK state storage)
+  - sdk/src/androidMain/kotlin/dev/replyhq/sdk/data/local/DatabaseDriverFactory.android.kt
+  - sdk/src/iosMain/kotlin/dev/replyhq/sdk/data/local/DatabaseDriverFactory.ios.kt
+- **Learnings for future iterations:**
+  - Do NOT use `generateAsync.set(true)` in SQLDelight config - NativeSqliteDriver doesn't support async schemas
+  - SQLDelight .sq files go in: sdk/src/commonMain/sqldelight/<package-path>/
+  - Use `IF NOT EXISTS` in CREATE TABLE/INDEX statements for idempotency
+  - Store timestamps as Long (epoch millis) in SQLite, convert with Instant.toEpochMilliseconds()
+  - MessageStatus enum is stored as string in DB, use .name and valueOf() for conversion
+  - ChatDatabaseWrapper provides Flows for reactive queries via asFlow().mapToList()
+---
+
+## Wed Jan 21 2026 - SDK-006
+Thread: https://ampcode.com/threads/T-019be19c-7f37-7368-8538-aab2a18a25c9
+- Implemented Ktor HTTP client ChatApi with all REST endpoints
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/ApiModels.kt (request/response DTOs)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/ChatApi.kt (HTTP client)
+- Endpoints implemented:
+  - POST /conversations - create/get conversation
+  - POST /conversations/:id/messages - send message
+  - GET /conversations/:id/messages?after=<ts> - fetch messages
+  - POST /push-token - register push token
+- **Learnings for future iterations:**
+  - Ktor client uses ContentNegotiation plugin with kotlinx.serialization.json
+  - Use defaultRequest block for common headers (X-App-Id, X-Device-Id, X-SDK-Version)
+  - ChatApiException wraps HTTP errors with status code and error details
+  - Use Result<T> pattern for API responses to handle errors gracefully
+---
+
+## Wed Jan 21 2026 - SDK-007
+Thread: https://ampcode.com/threads/T-019be19c-7f37-7368-8538-aab2a18a25c9
+- Implemented WebSocket realtime client for real-time messaging
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/RealtimeModels.kt (server/client events)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/RealtimeClient.kt (WebSocket handler)
+- Features implemented:
+  - Connect to wss://api.replyhq.dev/v1/realtime with app_id and device_id
+  - Handle server events: message.new, agent.typing, connection.established, pong, error
+  - Send client events: user.typing, ping
+  - Heartbeat ping every 30s
+  - Exposes Flow<RealtimeEvent> and StateFlow<RealtimeConnectionState>
+- **Learnings for future iterations:**
+  - Use MutableSharedFlow for event emission with extraBufferCapacity
+  - Parse JSON manually by type field due to sealed interface limitations in multiplatform
+  - Use Channel for buffered outgoing messages
+  - WebSocket session must be null-checked on disconnect
+---
+
+## Wed Jan 21 2026 - SDK-008, SDK-009, SDK-010, SDK-011, SDK-012, SDK-013 (partial)
+Thread: https://ampcode.com/threads/T-019be19c-7f37-7368-8538-aab2a18a25c9
+- Implemented ConnectionManager with state machine and exponential backoff reconnection
+- Implemented SyncManager for offline message synchronization
+- Implemented SessionManager for user and conversation lifecycle
+- Implemented DeviceContextCollector with expect/actual for platform metadata
+- Implemented ChatSDK main entry point singleton with public API
+- Started implementing UI theme system (SDK-013)
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/ConnectionManager.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/SyncManager.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/SessionManager.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/DeviceContextCollector.kt + platform actuals
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/ChatSDK.kt
+  - sdk/src/androidMain/kotlin/dev/replyhq/sdk/ChatSDKInitializer.android.kt
+  - sdk/src/iosMain/kotlin/dev/replyhq/sdk/ChatSDKInitializer.ios.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/ui/theme/ChatColors.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/ui/theme/ChatTypography.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/ui/theme/ChatTheme.kt
+- **Learnings for future iterations:**
+  - kotlinx-datetime 0.7+ moved Instant and Clock to kotlin.time (requires @OptIn(ExperimentalTime::class))
+  - Need custom InstantSerializer for kotlinx.serialization with kotlin.time.Instant
+  - Compose Multiplatform: add compose.runtime/foundation/material3/ui to commonMain dependencies
+  - iOS framework linking may require increased heap size for large projects
+---
+
+## Fri Jan 24 2026 - Phase 1, 2, 3 (Socket.IO Migration)
+Thread: `/workflows:work` - Socket.IO Realtime Chat Migration
+
+### Phase 1: Backend Socket.IO Setup ✅ COMPLETE
+- Implemented Socket.IO server with TypeScript
+- Created socket types, service skeleton, and full event handlers
+- Fixed multi-connection presence bug with per-connection Redis keys
+- Integrated with existing backend services
+- Files created:
+  - backend/src/types/socket.ts (Socket.IO type definitions)
+  - backend/src/services/socketService.ts (~700 lines, full implementation)
+- Files modified:
+  - backend/src/lib/redis.ts (Redis adapter setup)
+  - backend/src/services/presenceService.ts (completely rewritten for multi-connection)
+  - backend/src/services/messageService.ts (broadcast integration)
+  - backend/src/index.ts (Socket.IO initialization)
+  - backend/package.json (Socket.IO 4.8.3 added)
+
+### Phase 2: SDK Socket.IO Protocol Implementation ✅ COMPLETE
+- Created custom Socket.IO client for KMP (no official client exists)
+- Implemented complete Engine.IO + Socket.IO protocol parsing
+- Created all packet types, event types, and parser
+- Updated ConnectionManager and SyncManager for Socket.IO
+- Updated Android and iOS ChatSDKInitializers
+- Files created:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOPacket.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOEvent.kt
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOParser.kt (~150 lines)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/data/remote/SocketIOClient.kt (~500 lines)
+- Files modified:
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/config/NetworkConfig.kt (updated URLs)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/ConnectionManager.kt (completely rewritten)
+  - sdk/src/commonMain/kotlin/dev/replyhq/sdk/core/SyncManager.kt (Socket.IO event handling)
+  - sdk/src/androidMain/kotlin/dev/replyhq/sdk/ChatSDKInitializer.android.kt
+  - sdk/src/iosMain/kotlin/dev/replyhq/sdk/ChatSDKInitializer.ios.kt
+
+### Phase 3: Admin Integration & Comprehensive Testing ✅ COMPLETE
+- Created 96 passing integration tests validating Socket.IO implementation
+- Tested multi-connection presence handling, full client-server flows, broadcast reliability
+- Files created:
+  - backend/src/tests/integration/socketIO.test.ts (22 tests)
+  - backend/src/tests/integration/e2e.test.ts (18 tests)
+  - backend/src/tests/integration/multiConnection.test.ts (19 tests)
+  - backend/src/tests/integration/broadcastValidation.test.ts (31 tests)
+  - scripts/ralph/phase3-completion-summary.md (comprehensive documentation)
+
+**Test Coverage:**
+- Socket.IO Integration: Auth, Conversation join, Broadcasting, Connection count, Ping/Pong, Admin ops
+- E2E Full Flows: Connection→Auth→Presence→Join, Message send, Admin send, Offline sync, Typing
+- Multi-Connection: 2+ connections, Rapid reconnects, Network interruption, Device boundary detection
+- Broadcast Validation: Event structures, Targeting, Reliability, Message ordering, Scope filtering
+
+**Key Validations Performed:**
+- ✅ Multi-connection presence bug fixed: Device stays online if ANY connection active
+- ✅ Cursor-based sync: last_message_id passed on join for pagination
+- ✅ Socket.IO protocol: All events working (message:new, typing, session events, presence)
+- ✅ Admin operations: Join conversations, send messages, list sessions, receive typing
+- ✅ Broadcast integration: Message→conversation room, typing filtered by recipient type
+- ✅ Presence lifecycle: Connected→presence set, disconnected→presence removed, offline on last connection
+
+**Test Statistics:**
+- Total Test Files: 5
+- Total Tests: 96 passing
+- Duration: 544ms
+- All tests passing ✅
+
+**Dependencies Added:**
+- socket.io-client@4.8.3 (devDependency for test support)
+
+**Learnings for future iterations:**
+- Socket.IO requires custom KMP implementation (no official client available)
+- Multi-connection presence needs per-connection tracking with device-level aggregation
+- Cursor-based sync uses last_message_id from server for efficient pagination
+- Presence broadcasts only on device boundary (first connection/last disconnect)
+- Event structure validation critical for proper client-server communication
+- Admin namespace filters sessions by app_id for multi-tenant isolation
+- Broadcast to both namespaces independently for resilience
+- Mock setup requires proper spy configuration for vitest call verification
 ---

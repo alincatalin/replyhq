@@ -1,0 +1,424 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model App {
+  id         String   @id @default(uuid())
+  name       String
+  apiKey     String?  @unique @map("api_key") // DEPRECATED: Use apiKeyHash instead
+  apiKeyHash String   @unique @map("api_key_hash")
+  settings   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  conversations Conversation[]
+  devices       Device[]
+  adminUsers    AdminUser[]
+  subscription  Subscription?
+  onboardingState OnboardingState?
+  broadcasts    Broadcast[]
+  workflows     Workflow[]
+  webhooks      Webhook[]
+
+  @@map("apps")
+}
+
+model Conversation {
+  id        String   @id
+  visitorId String   @map("visitor_id")
+  status    String   @default("open") // open | resolved
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  appId String @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  userId   String? @map("user_id")
+  deviceId String  @map("device_id")
+
+  messages Message[]
+
+  @@unique([appId, deviceId, userId])
+  @@index([appId])
+  @@index([deviceId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id
+  localId        String   @unique @map("local_id")
+  body           String
+  sender         String   // user | agent | system
+  status         String   @default("SENT") // QUEUED | SENDING | SENT | DELIVERED | READ | FAILED
+  sequence       Int      @default(autoincrement())
+  createdAt      DateTime @default(now()) @map("created_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  readAt         DateTime? @map("read_at")
+
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  // Denormalized for RLS performance
+  appId String @map("app_id")
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([conversationId, sequence])
+  @@index([appId])
+  @@map("messages")
+}
+
+model Device {
+  id        String   @id @default(uuid())
+  deviceId  String   @map("device_id")
+  userId    String?  @map("user_id")
+  pushToken String?  @map("push_token")
+  pushTokenProvider String?   @map("push_token_provider") // fcm, apns
+  pushTokenUpdatedAt DateTime? @map("push_token_updated_at")
+  platform  String   // android | ios
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  appId String @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  pushNotifications PushNotification[]
+
+  @@unique([appId, deviceId])
+  @@index([appId])
+  @@index([pushToken])
+  @@map("devices")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("AGENT") // OWNER | ADMIN | AGENT
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  appId String @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  refreshTokens RefreshToken[]
+  broadcasts    Broadcast[]
+  workflows     Workflow[]
+
+  @@index([appId])
+  @@index([email])
+  @@map("admin_users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  userId String     @map("user_id")
+  user   AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Subscription {
+  id                String    @id @default(uuid())
+  stripeCustomerId  String    @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+  stripePriceId     String    @map("stripe_price_id")
+  status            String    // trialing | active | past_due | canceled | unpaid
+  currentPeriodEnd  DateTime  @map("current_period_end")
+  cancelAtPeriodEnd Boolean   @default(false) @map("cancel_at_period_end")
+  trialEndsAt       DateTime? @map("trial_ends_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  appId String @unique @map("app_id")
+  app   App    @relation(fields: [appId], references: [id])
+
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Broadcast {
+  id              String          @id @default(cuid())
+  appId           String          @map("app_id")
+  title           String
+  body            String          @db.Text
+  data            Json?
+  targetType      TargetType      @map("target_type")
+  segmentQuery    Json?           @map("segment_query")
+  userIds         String[]        @map("user_ids")
+  status          BroadcastStatus
+  scheduledAt     DateTime?       @map("scheduled_at")
+  sentAt          DateTime?       @map("sent_at")
+  completedAt     DateTime?       @map("completed_at")
+  totalRecipients Int             @default(0) @map("total_recipients")
+  totalSent       Int             @default(0) @map("total_sent")
+  totalDelivered  Int             @default(0) @map("total_delivered")
+  totalOpened     Int             @default(0) @map("total_opened")
+  totalClicked    Int             @default(0) @map("total_clicked")
+  errorMessage    String?         @map("error_message")
+  createdBy       String          @map("created_by")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  app         App                 @relation(fields: [appId], references: [id], onDelete: Cascade)
+  creator     AdminUser           @relation(fields: [createdBy], references: [id])
+  recipients  BroadcastRecipient[]
+
+  @@index([appId, status])
+  @@index([appId, scheduledAt])
+  @@map("broadcasts")
+}
+
+model BroadcastRecipient {
+  id           String          @id @default(cuid())
+  broadcastId  String          @map("broadcast_id")
+  userId       String          @map("user_id")
+  deviceId     String          @map("device_id")
+  status       RecipientStatus
+  sentAt       DateTime?       @map("sent_at")
+  deliveredAt  DateTime?       @map("delivered_at")
+  openedAt     DateTime?       @map("opened_at")
+  clickedAt    DateTime?       @map("clicked_at")
+  errorMessage String?         @map("error_message")
+  metadata     Json?
+
+  broadcast    Broadcast       @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  @@unique([broadcastId, deviceId])
+  @@index([broadcastId, status])
+  @@index([userId])
+  @@map("broadcast_recipients")
+}
+
+model Workflow {
+  id          String          @id @default(cuid())
+  appId       String          @map("app_id")
+  name        String
+  description String?
+  trigger     Json
+  nodes       Json
+  edges       Json
+  status      WorkflowStatus
+  version     Int             @default(1)
+  createdBy   String          @map("created_by")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  app         App             @relation(fields: [appId], references: [id], onDelete: Cascade)
+  creator     AdminUser       @relation(fields: [createdBy], references: [id])
+  executions  WorkflowExecution[]
+
+  @@index([appId, status])
+  @@index([appId, trigger])
+  @@map("workflows")
+}
+
+model WorkflowExecution {
+  id            String            @id @default(cuid())
+  workflowId    String            @map("workflow_id")
+  userId        String            @map("user_id")
+  deviceId      String?           @map("device_id")
+  status        ExecutionStatus
+  currentNodeId String?           @map("current_node_id")
+  context       Json
+  startedAt     DateTime          @default(now()) @map("started_at")
+  completedAt   DateTime?         @map("completed_at")
+  errorMessage  String?           @map("error_message")
+
+  workflow      Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  steps         WorkflowStep[]
+
+  @@index([workflowId, status])
+  @@index([userId, status])
+  @@index([workflowId, startedAt])
+  @@map("workflow_executions")
+}
+
+model WorkflowStep {
+  id           String          @id @default(cuid())
+  executionId  String          @map("execution_id")
+  nodeId       String          @map("node_id")
+  action       String
+  status       StepStatus
+  input        Json
+  output       Json?
+  startedAt    DateTime        @default(now()) @map("started_at")
+  completedAt  DateTime?       @map("completed_at")
+  errorMessage String?         @map("error_message")
+
+  execution    WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([nodeId, status])
+  @@map("workflow_steps")
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  appId     String   @map("app_id")
+  url       String
+  events    String[]
+  secret    String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  app        App     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([appId])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String   @map("webhook_id")
+  event        String
+  payload      Json
+  status       String
+  httpStatus   Int?     @map("http_status")
+  responseBody String?  @db.Text @map("response_body")
+  attempts     Int      @default(1)
+  nextRetryAt  DateTime? @map("next_retry_at")
+  deliveredAt  DateTime? @map("delivered_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, status])
+  @@map("webhook_deliveries")
+}
+
+model OnboardingState {
+  id              String   @id @default(uuid())
+  appId           String   @unique @map("app_id")
+
+  platform        String?  // ios, android, react-native, flutter
+  useCase         String?  // support, sales, notifications, community
+  sdkInstalled    Boolean  @default(false) @map("sdk_installed")
+  firstMessageSent Boolean @default(false) @map("first_message_sent")
+  userIdentified  Boolean  @default(false) @map("user_identified")
+  teamInvited     Boolean  @default(false) @map("team_invited")
+
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  app             App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_states")
+}
+
+enum TargetType {
+  ALL_USERS
+  SEGMENT
+  SPECIFIC_USERS
+}
+
+enum BroadcastStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum RecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+}
+
+enum ExecutionStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model Event {
+  id             BigInt   @id @default(autoincrement())
+  userId         String   @map("user_id")
+  appId          String   @map("app_id")
+  eventName      String   @map("event_name")
+  eventTimestamp DateTime @default(now()) @map("event_timestamp")
+
+  properties     Json     @default("{}")
+
+  // Denormalized user context for faster queries
+  userPlan       String?  @map("user_plan")
+  userCountry    String?  @map("user_country")
+
+  // Session tracking
+  sessionId      String?  @map("session_id")
+
+  // Device/source
+  platform       String?
+  appVersion     String?  @map("app_version")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([appId, eventTimestamp(sort: Desc)])
+  @@index([userId, eventTimestamp(sort: Desc)])
+  @@index([eventName, eventTimestamp(sort: Desc)])
+  @@index([appId, eventName, eventTimestamp(sort: Desc)])
+  @@map("events")
+}
+
+model PushNotification {
+  id            String   @id @default(uuid())
+  deviceId      String   @map("device_id")
+  title         String?
+  body          String
+  data          Json?
+  status        String   // pending, sent, failed, delivered
+
+  sentAt        DateTime? @map("sent_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  errorMessage  String?   @map("error_message")
+  errorCode     String?   @map("error_code")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  retainUntil   DateTime @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("retain_until")
+
+  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, status])
+  @@index([retainUntil])
+  @@index([createdAt(sort: Desc)])
+  @@map("push_notifications")
+}

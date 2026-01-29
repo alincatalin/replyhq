@@ -1,0 +1,148 @@
+{
+  "feature": "ReplyHQ Backend API",
+  "description": "Backend API server for ReplyHQ customer support chat with REST endpoints, WebSocket real-time messaging, and push notification delivery",
+  "version": "1.0.0",
+  "branchName": "ralph/replyhq-backend",
+  "stories": [
+    {
+      "id": "BE-001",
+      "title": "Project scaffolding & base setup",
+      "description": "Set up the backend project structure with base configuration.\n\n**What to do:**\n- Create backend project with chosen framework (Node.js/Express, Kotlin/Ktor, or similar)\n- Configure base URL: https://api.replyhq.dev/v1\n- Set up required header validation middleware for X-App-Id, X-Device-Id, X-SDK-Version\n- Configure Content-Type: application/json handling\n- Set up database connection (PostgreSQL recommended)\n\n**Acceptance criteria:**\n- Server starts without errors\n- Header validation middleware rejects requests missing required headers\n- Returns 400 for missing X-App-Id or X-Device-Id",
+      "passes": true,
+      "dependsOn": []
+    },
+    {
+      "id": "BE-002",
+      "title": "Database schema - conversations & messages",
+      "description": "Create database schema for core entities.\n\n**What to do:**\n- Create conversations table: id, visitor_id, status (open|resolved), created_at, updated_at, metadata (JSONB)\n- Create messages table: id, local_id (unique), conversation_id (FK), body, sender (user|agent|system), created_at, status\n- Create devices table: device_id, app_id, user_id, push_token, platform, created_at, updated_at\n- Add indexes for conversation_id, local_id, created_at\n\n**Acceptance criteria:**\n- Migrations run successfully\n- Schema supports all required fields from PRD",
+      "passes": true,
+      "dependsOn": ["BE-001"]
+    },
+    {
+      "id": "BE-003",
+      "title": "POST /conversations endpoint",
+      "description": "Implement create/fetch conversation endpoint.\n\n**What to do:**\n- Create POST /conversations endpoint\n- Accept request body with user (id, name, email, attributes) and device_context\n- Return existing conversation for device/user combo if exists, else create new\n- Generate conversation id (conv_xxx format) and visitor_id (vis_xxx format)\n- Return: id, visitor_id, status, created_at, updated_at, metadata\n\n**Request shape:**\n```json\n{\n  \"user\": { \"id\": \"user_123\", \"name\": \"Jane\", \"email\": \"jane@example.com\", \"attributes\": {} },\n  \"device_context\": { \"platform\": \"android\", \"os_version\": \"...\", ... }\n}\n```\n\n**Acceptance criteria:**\n- Returns 200 with conversation object\n- Idempotent for same device/user\n- Timestamps are ISO-8601 format",
+      "passes": true,
+      "dependsOn": ["BE-002"]
+    },
+    {
+      "id": "BE-004",
+      "title": "POST /conversations/:id/messages endpoint",
+      "description": "Implement send message endpoint with idempotency.\n\n**What to do:**\n- Create POST /conversations/:id/messages endpoint\n- Accept: local_id (UUID), body (string), device_context (optional)\n- Enforce idempotency: if local_id exists, return existing message (no duplicate)\n- Generate message id (msg_xxx format)\n- Set initial status to SENT\n- Enforce 5000 char max body length\n\n**Response shape:**\n```json\n{\n  \"message\": {\n    \"id\": \"msg_xxx\", \"local_id\": \"uuid\", \"conversation_id\": \"conv_xxx\",\n    \"body\": \"Hello\", \"sender\": \"user\", \"created_at\": \"...\", \"status\": \"SENT\"\n  }\n}\n```\n\n**Acceptance criteria:**\n- Returns 200 with message object\n- Duplicate local_id returns existing message, no new insert\n- 400 for body > 5000 chars",
+      "passes": true,
+      "dependsOn": ["BE-003"]
+    },
+    {
+      "id": "BE-005",
+      "title": "GET /conversations/:id/messages endpoint",
+      "description": "Implement fetch messages endpoint with pagination.\n\n**What to do:**\n- Create GET /conversations/:id/messages endpoint\n- Query params: after (epoch milliseconds), limit (default 50)\n- Return messages created after timestamp, ordered by created_at ASC\n- Include has_more boolean for pagination\n\n**Response shape:**\n```json\n{\n  \"messages\": [...],\n  \"has_more\": false\n}\n```\n\n**Acceptance criteria:**\n- Returns messages after given timestamp\n- Respects limit parameter\n- Returns empty array if no messages",
+      "passes": true,
+      "dependsOn": ["BE-004"]
+    },
+    {
+      "id": "BE-006",
+      "title": "POST /push-token endpoint",
+      "description": "Implement push token registration.\n\n**What to do:**\n- Create POST /push-token endpoint\n- Accept: token, platform (android|ios), device_id\n- Upsert token for device_id (overwrite existing)\n- Store platform for routing to FCM vs APNs\n\n**Request shape:**\n```json\n{ \"token\": \"push_token\", \"platform\": \"android\", \"device_id\": \"device_xxx\" }\n```\n\n**Acceptance criteria:**\n- Returns { \"success\": true }\n- Overwrites existing token for same device_id\n- Validates platform is android or ios",
+      "passes": true,
+      "dependsOn": ["BE-002"]
+    },
+    {
+      "id": "BE-007",
+      "title": "WebSocket server setup",
+      "description": "Set up WebSocket server for real-time messaging.\n\n**What to do:**\n- Create WebSocket endpoint at wss://api.replyhq.dev/v1/realtime\n- Accept query params: app_id, device_id\n- Validate app_id and device_id on connection\n- Send connection.established event on successful connect\n- Maintain connection registry by device_id\n\n**Event shape:**\n```json\n{ \"type\": \"connection.established\", \"connection_id\": \"conn_xxx\" }\n```\n\n**Acceptance criteria:**\n- WebSocket accepts connections with valid params\n- Sends connection.established on connect\n- Rejects connections with missing params",
+      "passes": true,
+      "dependsOn": ["BE-001"]
+    },
+    {
+      "id": "BE-008",
+      "title": "WebSocket heartbeat & ping/pong",
+      "description": "Implement heartbeat mechanism.\n\n**What to do:**\n- Handle client ping events, respond with pong\n- Detect stale connections (no ping for 60s)\n- Clean up stale connections\n\n**Event shapes:**\n```json\n{ \"type\": \"ping\" }\n{ \"type\": \"pong\" }\n```\n\n**Acceptance criteria:**\n- Server responds to ping with pong\n- Stale connections cleaned up after timeout",
+      "passes": true,
+      "dependsOn": ["BE-007"]
+    },
+    {
+      "id": "BE-009",
+      "title": "WebSocket message.new broadcast",
+      "description": "Broadcast new messages to connected clients.\n\n**What to do:**\n- When message created (via REST), broadcast to WebSocket clients in same conversation\n- Include full message object with local_id for client reconciliation\n- Broadcast agent/system messages to user devices\n\n**Event shape:**\n```json\n{ \"type\": \"message.new\", \"message\": { ...Message... } }\n```\n\n**Acceptance criteria:**\n- New messages broadcast to connected clients\n- User messages include local_id\n- Only clients in conversation receive broadcast",
+      "passes": true,
+      "dependsOn": ["BE-004", "BE-007"]
+    },
+    {
+      "id": "BE-010",
+      "title": "WebSocket typing indicators",
+      "description": "Implement typing indicator events.\n\n**What to do:**\n- Handle client user.typing events\n- Broadcast agent.typing to user devices when agent types\n- Include conversation_id and is_typing boolean\n\n**Event shapes:**\n```json\n{ \"type\": \"user.typing\", \"conversation_id\": \"conv_xxx\", \"is_typing\": true }\n{ \"type\": \"agent.typing\", \"conversation_id\": \"conv_xxx\", \"is_typing\": true }\n```\n\n**Acceptance criteria:**\n- Typing events broadcast to other participants\n- Events include conversation_id",
+      "passes": true,
+      "dependsOn": ["BE-009"]
+    },
+    {
+      "id": "BE-011",
+      "title": "Error response standardization",
+      "description": "Implement standardized error responses.\n\n**What to do:**\n- All non-2xx responses return: { error, code?, message? }\n- 401 for expired/invalid tokens → SDK clears state\n- 403 for invalid app_id → SDK disables itself\n- 400 for validation errors\n- 404 for not found resources\n- 429 for rate limit exceeded\n\n**Error shape:**\n```json\n{ \"error\": \"string\", \"code\": \"string?\", \"message\": \"string?\" }\n```\n\n**Acceptance criteria:**\n- All error responses follow standard shape\n- Correct status codes for each error type",
+      "passes": true,
+      "dependsOn": ["BE-003", "BE-007"]
+    },
+    {
+      "id": "BE-012",
+      "title": "WebSocket error events",
+      "description": "Implement WebSocket error event broadcasting.\n\n**What to do:**\n- Send error events for WebSocket-level errors\n- Include error string and optional code\n- Close connection on fatal errors\n\n**Event shape:**\n```json\n{ \"type\": \"error\", \"error\": \"string\", \"code\": \"string?\" }\n```\n\n**Acceptance criteria:**\n- Error events sent before connection close\n- Includes meaningful error messages",
+      "passes": true,
+      "dependsOn": ["BE-011"]
+    },
+    {
+      "id": "BE-013",
+      "title": "Rate limiting",
+      "description": "Implement rate limiting for messages.\n\n**What to do:**\n- Limit to 5 messages/second per device/user\n- Return 429 when exceeded\n- Use sliding window or token bucket algorithm\n- Apply to POST /messages endpoint\n\n**Acceptance criteria:**\n- 429 returned when rate exceeded\n- Rate tracked per device_id\n- Queueing handled client-side",
+      "passes": true,
+      "dependsOn": ["BE-004"]
+    },
+    {
+      "id": "BE-014",
+      "title": "Push notification delivery - FCM",
+      "description": "Implement Firebase Cloud Messaging for Android.\n\n**What to do:**\n- Integrate FCM Admin SDK\n- Send push when agent message created and device offline\n- Include message preview in notification\n- Handle token invalidation\n\n**Acceptance criteria:**\n- Push delivered to Android devices\n- Handles invalid tokens gracefully",
+      "passes": true,
+      "dependsOn": ["BE-006", "BE-009"]
+    },
+    {
+      "id": "BE-015",
+      "title": "Push notification delivery - APNs",
+      "description": "Implement Apple Push Notification service for iOS.\n\n**What to do:**\n- Integrate APNs client\n- Send push when agent message created and device offline\n- Include message preview in notification\n- Handle token invalidation\n\n**Acceptance criteria:**\n- Push delivered to iOS devices\n- Handles invalid tokens gracefully",
+      "passes": true,
+      "dependsOn": ["BE-006", "BE-009"]
+    },
+    {
+      "id": "BE-016",
+      "title": "App ID validation & management",
+      "description": "Implement app_id validation.\n\n**What to do:**\n- Create apps table with id, name, api_key, created_at, settings\n- Validate X-App-Id header against apps table\n- Return 403 for invalid app_id\n- Cache valid app_ids for performance\n\n**Acceptance criteria:**\n- Invalid app_id returns 403\n- Valid app_ids cached\n- Apps table supports CRUD",
+      "passes": true,
+      "dependsOn": ["BE-001"]
+    },
+    {
+      "id": "BE-017",
+      "title": "Unit tests - REST endpoints",
+      "description": "Write unit tests for REST API.\n\n**What to do:**\n- Test POST /conversations create and fetch\n- Test POST /messages idempotency\n- Test GET /messages pagination\n- Test POST /push-token upsert\n- Test error responses\n\n**Acceptance criteria:**\n- All REST endpoints have test coverage\n- Tests pass",
+      "passes": true,
+      "dependsOn": ["BE-005", "BE-006"]
+    },
+    {
+      "id": "BE-018",
+      "title": "Unit tests - WebSocket",
+      "description": "Write unit tests for WebSocket.\n\n**What to do:**\n- Test connection establishment\n- Test ping/pong heartbeat\n- Test message.new broadcast\n- Test typing indicators\n- Test error handling\n\n**Acceptance criteria:**\n- All WebSocket events have test coverage\n- Tests pass",
+      "passes": true,
+      "dependsOn": ["BE-012"]
+    },
+    {
+      "id": "BE-019",
+      "title": "Integration tests - message flow",
+      "description": "Write integration tests for full message flow.\n\n**What to do:**\n- Test: create conversation → send message → receive via WebSocket\n- Test: send duplicate local_id → no duplicate created\n- Test: offline device → push notification sent\n- Test: reconnect → fetch missed messages\n\n**Acceptance criteria:**\n- Full flow tests pass\n- No race conditions in message delivery",
+      "passes": true,
+      "dependsOn": ["BE-017", "BE-018"]
+    },
+    {
+      "id": "BE-020",
+      "title": "Deployment configuration",
+      "description": "Set up deployment configuration.\n\n**What to do:**\n- Create Dockerfile\n- Set up environment variable configuration\n- Configure for horizontal scaling (stateless REST, sticky WebSocket)\n- Set up health check endpoint\n\n**Acceptance criteria:**\n- Docker build succeeds\n- Health check endpoint returns 200\n- Can run multiple instances",
+      "passes": true,
+      "dependsOn": ["BE-019"]
+    }
+  ]
+}

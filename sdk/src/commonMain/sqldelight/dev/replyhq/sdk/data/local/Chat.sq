@@ -1,0 +1,83 @@
+-- Conversation table
+CREATE TABLE IF NOT EXISTS ConversationEntity (
+    id TEXT PRIMARY KEY NOT NULL,
+    visitor_id TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+
+-- Message table
+CREATE TABLE IF NOT EXISTS MessageEntity (
+    local_id TEXT PRIMARY KEY NOT NULL,
+    id TEXT,
+    conversation_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    sender_type TEXT NOT NULL,
+    sent_at INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'QUEUED',
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (conversation_id) REFERENCES ConversationEntity(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_message_conversation ON MessageEntity(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_message_status ON MessageEntity(status);
+
+-- Conversation queries
+insertConversation:
+INSERT OR REPLACE INTO ConversationEntity(id, visitor_id, status, created_at, updated_at, metadata)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getConversationById:
+SELECT * FROM ConversationEntity WHERE id = ?;
+
+getAllConversations:
+SELECT * FROM ConversationEntity ORDER BY updated_at DESC;
+
+updateConversationUpdatedAt:
+UPDATE ConversationEntity SET updated_at = ? WHERE id = ?;
+
+deleteConversation:
+DELETE FROM ConversationEntity WHERE id = ?;
+
+-- Message queries
+insertMessage:
+INSERT OR REPLACE INTO MessageEntity(local_id, id, conversation_id, content, sender_type, sent_at, status, retry_count)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+getMessagesByConversation:
+SELECT * FROM MessageEntity WHERE conversation_id = ? ORDER BY sent_at ASC;
+
+getMessageByLocalId:
+SELECT * FROM MessageEntity WHERE local_id = ?;
+
+getQueuedMessages:
+SELECT * FROM MessageEntity WHERE status = 'QUEUED' OR status = 'FAILED' ORDER BY sent_at ASC;
+
+getPendingMessages:
+SELECT * FROM MessageEntity WHERE status IN ('QUEUED', 'SENDING') ORDER BY sent_at ASC;
+
+updateMessageStatus:
+UPDATE MessageEntity SET status = ? WHERE local_id = ?;
+
+updateMessageServerId:
+UPDATE MessageEntity SET id = ?, status = ? WHERE local_id = ?;
+
+incrementRetryCount:
+UPDATE MessageEntity SET retry_count = retry_count + 1 WHERE local_id = ?;
+
+getRetryCount:
+SELECT retry_count FROM MessageEntity WHERE local_id = ?;
+
+deleteMessagesByConversation:
+DELETE FROM MessageEntity WHERE conversation_id = ?;
+
+deleteAllMessages:
+DELETE FROM MessageEntity;
+
+countQueuedMessages:
+SELECT COUNT(*) FROM MessageEntity WHERE status = 'QUEUED' OR status = 'SENDING';
+
+getMessagesAfterTimestamp:
+SELECT * FROM MessageEntity WHERE conversation_id = ? AND sent_at > ? ORDER BY sent_at ASC;

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReplyHQ Admin</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --message-user: #e0f2fe;
+      --message-agent: #fef9c3;
+      --shadow: rgba(15, 23, 42, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0%, #0f172a 40%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.6px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .controls input {
+      background: #0b1120;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      min-width: 140px;
+    }
+
+    .controls button {
+      background: var(--accent);
+      color: #052e16;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .controls button.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      padding: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 16px;
+      color: var(--muted);
+      letter-spacing: 0.4px;
+    }
+
+    .users {
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .user-card {
+      background: var(--card);
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border 0.2s ease, transform 0.2s ease;
+    }
+
+    .user-card.active {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(34, 197, 94, 0.15);
+    }
+
+    .user-card h3 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+    }
+
+    .user-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #111827;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .badge.online {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--accent);
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chat-header span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.7) 0%, rgba(17, 24, 39, 0.9) 100%);
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .message.user {
+      align-self: flex-start;
+      background: var(--message-user);
+      color: #0f172a;
+    }
+
+    .message.agent {
+      align-self: flex-end;
+      background: var(--message-agent);
+      color: #713f12;
+    }
+
+    .message .meta {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: #0b1120;
+    }
+
+    .composer textarea {
+      flex: 1;
+      min-height: 50px;
+      max-height: 140px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #111827;
+      color: var(--text);
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .composer button {
+      background: var(--accent);
+      color: #052e16;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 20px 12px;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ReplyHQ Admin Inbox</h1>
+    <div class="controls">
+      <input id="appId" placeholder="App ID" />
+      <input id="apiKey" placeholder="API Key" type="password" />
+      <button id="connectBtn">Connect</button>
+      <button id="refreshBtn" class="secondary">Refresh</button>
+    </div>
+  </header>
+  <main>
+    <section class="panel">
+      <h2>Users</h2>
+      <div class="users" id="users"></div>
+    </section>
+    <section class="panel">
+      <div class="chat-header" id="chatHeader">
+        <strong>Select a user</strong>
+        <span id="chatMeta">No conversation selected</span>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="status" id="status">Not connected.</div>
+      <div class="composer">
+        <textarea id="composer" placeholder="Type a reply..."></textarea>
+        <button id="sendBtn">Send</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    const appIdInput = document.getElementById('appId');
+    const apiKeyInput = document.getElementById('apiKey');
+    const connectBtn = document.getElementById('connectBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const usersEl = document.getElementById('users');
+    const messagesEl = document.getElementById('messages');
+    const chatHeader = document.getElementById('chatHeader');
+    const chatMeta = document.getElementById('chatMeta');
+    const statusEl = document.getElementById('status');
+    const composerEl = document.getElementById('composer');
+    const sendBtn = document.getElementById('sendBtn');
+
+    const state = {
+      appId: '',
+      apiKey: '',
+      users: [],
+      activeConversationId: null,
+      messages: new Map(),
+      ws: null,
+      polling: null,
+      userRefresh: null,
+    };
+
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    function buildQuery() {
+      return `app_id=${encodeURIComponent(state.appId)}&api_key=${encodeURIComponent(state.apiKey)}`;
+    }
+
+    async function fetchUsers() {
+      if (!state.appId || !state.apiKey) return;
+      const res = await fetch(`/admin/api/users?${buildQuery()}`);
+      if (!res.ok) {
+        setStatus('Failed to load users.');
+        return;
+      }
+      const data = await res.json();
+      state.users = data.users || [];
+      renderUsers();
+    }
+
+    function renderUsers() {
+      usersEl.innerHTML = '';
+      state.users.forEach((user) => {
+        const card = document.createElement('div');
+        card.className = `user-card ${state.activeConversationId === user.conversation_id ? 'active' : ''}`;
+        card.innerHTML = `
+          <h3>${user.display_name}</h3>
+          <div class="user-meta">
+            <span>${user.user_id ? user.user_id : 'Anonymous'}</span>
+            <span class="badge ${user.is_online ? 'online' : ''}">${user.is_online ? 'online' : 'offline'}</span>
+          </div>
+          <div class="user-meta">
+            <span>${user.last_message || 'No messages yet'}</span>
+            <span>${new Date(user.updated_at).toLocaleString()}</span>
+          </div>
+        `;
+        card.addEventListener('click', () => selectConversation(user.conversation_id));
+        usersEl.appendChild(card);
+      });
+    }
+
+    async function selectConversation(conversationId) {
+      state.activeConversationId = conversationId;
+      state.messages.clear();
+      await fetchMessages();
+      renderMessages();
+      renderUsers();
+      const user = state.users.find((item) => item.conversation_id === conversationId);
+      chatHeader.innerHTML = `<strong>${user?.display_name || 'Conversation'}</strong>`;
+      chatMeta.textContent = conversationId;
+      connectWebSocket();
+      startPolling();
+    }
+
+    async function fetchMessages(after) {
+      if (!state.activeConversationId) return;
+      const url = new URL(`/admin/api/conversations/${state.activeConversationId}/messages`, window.location.origin);
+      url.search = buildQuery();
+      if (after) url.searchParams.set('after', after);
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        setStatus('Failed to load messages.');
+        return;
+      }
+      const data = await res.json();
+      (data.messages || []).forEach((message) => {
+        state.messages.set(message.id || message.local_id, message);
+      });
+    }
+
+    function renderMessages() {
+      const messages = Array.from(state.messages.values()).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      messagesEl.innerHTML = '';
+      messages.forEach((message) => {
+        const bubble = document.createElement('div');
+        bubble.className = `message ${message.sender === 'user' ? 'user' : 'agent'}`;
+        bubble.innerHTML = `
+          <div>${message.body}</div>
+          <div class="meta">${message.sender} · ${new Date(message.created_at).toLocaleTimeString()}</div>
+        `;
+        messagesEl.appendChild(bubble);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function connectWebSocket() {
+      if (!state.appId || !state.apiKey) return;
+      if (!state.activeConversationId) return;
+
+      if (state.ws) {
+        try { state.ws.close(); } catch (_) {}
+        state.ws = null;
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const wsUrl = `${protocol}://${window.location.host}/admin/realtime?app_id=${encodeURIComponent(state.appId)}&api_key=${encodeURIComponent(state.apiKey)}`;
+      state.ws = new WebSocket(wsUrl);
+
+      state.ws.addEventListener('open', () => {
+        setStatus('Connected to admin realtime.');
+        state.ws.send(JSON.stringify({ type: 'subscribe', conversation_id: state.activeConversationId }));
+      });
+
+      state.ws.addEventListener('message', (event) => {
+        let payload;
+        try { payload = JSON.parse(event.data); } catch { return; }
+        if (payload.type === 'message.new' && payload.message) {
+          const message = payload.message;
+          if (message.conversation_id === state.activeConversationId) {
+            state.messages.set(message.id || message.local_id, message);
+            renderMessages();
+          }
+        }
+      });
+
+      state.ws.addEventListener('close', () => {
+        setStatus('Realtime disconnected.');
+      });
+    }
+
+    function startPolling() {
+      if (state.polling) clearInterval(state.polling);
+      state.polling = setInterval(async () => {
+        if (!state.activeConversationId) return;
+        const messages = Array.from(state.messages.values());
+        const lastMessage = messages[messages.length - 1];
+        const after = lastMessage ? new Date(lastMessage.created_at).getTime() : undefined;
+        await fetchMessages(after);
+        renderMessages();
+      }, 4000);
+    }
+
+    async function sendMessage() {
+      if (!state.activeConversationId) return;
+      const body = composerEl.value.trim();
+      if (!body) return;
+      const res = await fetch(`/admin/api/conversations/${state.activeConversationId}/messages?${buildQuery()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+      });
+      if (!res.ok) {
+        setStatus('Failed to send message.');
+        return;
+      }
+      const data = await res.json();
+      if (data.message) {
+        state.messages.set(data.message.id || data.message.local_id, data.message);
+        renderMessages();
+      }
+      composerEl.value = '';
+      fetchUsers();
+    }
+
+    connectBtn.addEventListener('click', async () => {
+      state.appId = appIdInput.value.trim();
+      state.apiKey = apiKeyInput.value.trim();
+      if (!state.appId || !state.apiKey) {
+        setStatus('Enter app ID and API key.');
+        return;
+      }
+      setStatus('Loading users...');
+      await fetchUsers();
+      setStatus('Ready.');
+      if (state.userRefresh) clearInterval(state.userRefresh);
+      state.userRefresh = setInterval(fetchUsers, 10000);
+    });
+
+    refreshBtn.addEventListener('click', fetchUsers);
+    sendBtn.addEventListener('click', sendMessage);
+    composerEl.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
