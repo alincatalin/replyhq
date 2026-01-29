@@ -19,8 +19,17 @@ import onboardingRouter from './routes/onboarding.js';
 import docsRouter from './routes/docs.js';
 import analyticsRouter from './routes/analytics.js';
 import setupRouter from './routes/setup.js';
+import broadcastsRouter from './routes/broadcasts.js';
+import workflowsRouter from './routes/workflows.js';
+import adminWebhooksRouter from './routes/adminWebhooks.js';
+import eventsRouter from './routes/events.js';
+import identifyRouter from './routes/identify.js';
 
 const app: Express = express();
+
+// Define public path for static files
+const publicPath = path.join(process.cwd(), 'public');
+console.log('[Static Files] Serving from:', publicPath);
 
 // Security headers
 app.use(helmet());
@@ -36,6 +45,14 @@ app.use(morgan('combined'));
 
 // Health check (no rate limiting)
 app.use('/health', healthRouter);
+
+// Landing page at root
+app.use('/', express.static(publicPath, {
+  index: 'index.html',
+  maxAge: '1h',
+  etag: true,
+  lastModified: true
+}));
 
 // Webhooks (must come BEFORE body parsing middleware for raw body access)
 // The webhook handler uses express.raw() internally
@@ -60,13 +77,21 @@ app.use('/admin/docs', docsRouter);
 // Analytics routes with JWT authentication
 app.use('/admin/analytics', analyticsRouter);
 
+// Broadcasts routes with JWT authentication
+app.use('/admin/broadcasts', broadcastsRouter);
+
+// Workflows routes with JWT authentication
+app.use('/admin/workflows', workflowsRouter);
+
+// Admin webhooks routes with JWT authentication
+app.use('/admin/webhooks', adminWebhooksRouter);
+
 // Admin routes with JWT authentication
 app.use('/admin', adminRouter);
 
 // Serve static files for admin dashboard (HTML, CSS, JS)
 // IMPORTANT: This must come AFTER admin API routes so /admin/api/* routes take precedence
-// Using relative path from dist directory: dist/../public = public
-app.use('/admin', express.static(path.join(process.cwd(), 'backend/public'), {
+app.use('/admin', express.static(publicPath, {
   maxAge: '1h', // Cache static files for 1 hour
   etag: true,
   lastModified: true
@@ -99,6 +124,8 @@ app.use('/v1', (req, res, next) => {
 
 app.use('/v1/conversations', conversationsRouter);
 app.use('/v1/push-token', pushTokenRouter);
+app.use('/v1/events', eventsRouter);
+app.use('/v1/identify', identifyRouter);
 
 app.use(errorHandler);
 

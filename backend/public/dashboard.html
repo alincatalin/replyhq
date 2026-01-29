@@ -458,33 +458,54 @@
                 <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-label">Active Conversations</div>
-                        <div class="stat-value">247</div>
+                        <div class="stat-label">Total Conversations</div>
+                        <div class="stat-value" id="total-conversations">0</div>
                         <div class="stat-change positive">
                             ↑ 12% from last week
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Avg Response Time</div>
-                        <div class="stat-value">2.4h</div>
+                        <div class="stat-label">Open Conversations</div>
+                        <div class="stat-value" id="open-conversations">0</div>
                         <div class="stat-change positive">
                             ↓ 18% faster
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Bug Reports</div>
-                        <div class="stat-value">18</div>
+                        <div class="stat-label">Resolved Conversations</div>
+                        <div class="stat-value" id="resolved-conversations">0</div>
                         <div class="stat-change negative">
                             ↑ 3 new today
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Active Users (MAU)</div>
-                        <div class="stat-value">3.2k</div>
+                        <div class="stat-label">Online Conversations</div>
+                        <div class="stat-value" id="online-conversations">0</div>
                         <div class="stat-change positive">
                             ↑ 8% growth
                         </div>
                     </div>
+                </div>
+
+                <!-- Analytics Overview -->
+                <div class="section-header" style="margin-top: 2rem;">
+                    <h2 class="section-title">Analytics Overview (Last 30 Days)</h2>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Events</div>
+                        <div class="stat-value" id="analytics-total-events">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Unique Users</div>
+                        <div class="stat-value" id="analytics-unique-users">0</div>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="margin-top: 1rem;">
+                    <div class="stat-label">Top Events</div>
+                    <ul id="analytics-top-events" style="list-style: none; padding: 0; margin: 1rem 0 0;"></ul>
                 </div>
 
                 <!-- Recent Conversations -->
@@ -590,7 +611,7 @@
     </div>
 
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
 
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -599,12 +620,7 @@
     <script src="/admin/js/utils.js"></script>
 
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
 
     <!-- Page-specific functionality will be loaded here -->
     <script src="/admin/js/dashboard.js"></script>

@@ -41,6 +41,15 @@ data class FetchMessagesResponse(
 )
 
 @Serializable
+data class SyncMessagesResponse(
+    val messages: List<Message>,
+    @SerialName("last_sequence")
+    val lastSequence: Long,
+    @SerialName("has_more")
+    val hasMore: Boolean
+)
+
+@Serializable
 data class RegisterPushTokenRequest(
     val token: String,
     val platform: String,
@@ -51,6 +60,62 @@ data class RegisterPushTokenRequest(
 @Serializable
 data class RegisterPushTokenResponse(
     val success: Boolean
+)
+
+@Serializable
+data class IdentifyRequest(
+    val user: ChatUser
+)
+
+@Serializable
+data class IdentifyResponse(
+    val success: Boolean
+)
+
+@Serializable
+data class TrackEventRequest(
+    @SerialName("user_id")
+    val userId: String,
+    @SerialName("event_name")
+    val eventName: String,
+    val properties: Map<String, String>? = null,
+    @SerialName("user_plan")
+    val userPlan: String? = null,
+    @SerialName("user_country")
+    val userCountry: String? = null,
+    @SerialName("session_id")
+    val sessionId: String? = null,
+    val platform: String? = null,
+    @SerialName("app_version")
+    val appVersion: String? = null
+)
+
+@Serializable
+data class TrackEventResponse(
+    val success: Boolean
+)
+
+@Serializable
+data class MarkDeliveredRequest(
+    @SerialName("message_ids")
+    val messageIds: List<String>
+)
+
+@Serializable
+data class MarkReadRequest(
+    @SerialName("up_to_message_id")
+    val upToMessageId: String? = null
+)
+
+@Serializable
+data class MessageStatusUpdateResponse(
+    val updates: List<MessageStatusUpdate>
+)
+
+@Serializable
+data class MessageStatusUpdate(
+    val id: String,
+    val status: String
 )
 
 @Serializable

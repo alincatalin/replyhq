@@ -21,7 +21,7 @@ async function login(email, password) {
     throw new Error(error.error || 'Login failed');
   }
 
-  const { accessToken, refreshToken } = await response.json();
+  const { access_token: accessToken, refresh_token: refreshToken } = await response.json();
 
   // Store tokens
   localStorage.setItem('accessToken', accessToken);
@@ -60,7 +60,7 @@ async function getValidAccessToken() {
       const response = await fetch('/admin/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken })
+        body: JSON.stringify({ refresh_token: refreshToken })
       });
 
       if (!response.ok) {
@@ -69,7 +69,7 @@ async function getValidAccessToken() {
         return null;
       }
 
-      const { accessToken: newToken } = await response.json();
+      const { access_token: newToken } = await response.json();
       localStorage.setItem('accessToken', newToken);
 
       // Update user info from new token
@@ -103,7 +103,7 @@ async function logout() {
       await fetch('/admin/auth/logout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken })
+        body: JSON.stringify({ refresh_token: refreshToken })
       });
     } catch (error) {
       console.error('Error revoking refresh token:', error);
@@ -192,4 +192,12 @@ function isOwner() {
 function isAdmin() {
   const role = localStorage.getItem('role');
   return role === 'OWNER' || role === 'ADMIN';
+}
+
+/**
+ * Enforce authentication on protected pages.
+ * Use this from external JS files to avoid inline scripts.
+ */
+function enforceAuth() {
+  requireAuth();
 }

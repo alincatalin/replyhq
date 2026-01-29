@@ -353,77 +353,14 @@
             </header>
 
             <div class="content">
-                <div class="w-grid">
-                    <!-- Workflow 1 -->
-                    <a href="workflow-editor.html" class="w-card">
-                        <div class="w-header">
-                            <div>
-                                <div class="w-title">Onboarding + Upsell</div>
-                                <div class="w-desc">Welcome sequence for new signups.</div>
-                            </div>
-                            <div class="w-status active">Active</div>
-                        </div>
-                        <div class="w-stats">
-                            <div class="w-stat-item">
-                                <span class="w-stat-val">842</span>
-                                <span class="w-stat-label">Entered</span>
-                            </div>
-                            <div class="w-stat-item">
-                                <span class="w-stat-val">12%</span>
-                                <span class="w-stat-label">Converted</span>
-                            </div>
-                        </div>
-                    </a>
-
-                    <!-- Workflow 2 -->
-                    <a href="workflow-editor.html" class="w-card">
-                        <div class="w-header">
-                            <div>
-                                <div class="w-title">Winback 30 Days</div>
-                                <div class="w-desc">Re-engage inactive users.</div>
-                            </div>
-                            <div class="w-status active">Active</div>
-                        </div>
-                        <div class="w-stats">
-                            <div class="w-stat-item">
-                                <span class="w-stat-val">156</span>
-                                <span class="w-stat-label">Entered</span>
-                            </div>
-                            <div class="w-stat-item">
-                                <span class="w-stat-val">4.5%</span>
-                                <span class="w-stat-label">Resurrected</span>
-                            </div>
-                        </div>
-                    </a>
-
-                    <!-- Workflow 3 -->
-                    <a href="workflow-editor.html" class="w-card">
-                        <div class="w-header">
-                            <div>
-                                <div class="w-title">Feedback Loop</div>
-                                <div class="w-desc">Ask for feedback after 5 successful tasks.</div>
-                            </div>
-                            <div class="w-status paused">Paused</div>
-                        </div>
-                        <div class="w-stats">
-                            <div class="w-stat-item">
-                                <span class="w-stat-val">34</span>
-                                <span class="w-stat-label">Entered</span>
-                            </div>
-                            <div class="w-stat-item">
-                                <span class="w-stat-val">--</span>
-                                <span class="w-stat-label">Rate</span>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+                <div class="w-grid" id="workflows-list"></div>
             </div>
         </main>
     </div>
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -432,12 +369,10 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
+
+    <!-- Page-specific scripts -->
+    <script src="/admin/js/workflows.js"></script>
     
 </body>
 

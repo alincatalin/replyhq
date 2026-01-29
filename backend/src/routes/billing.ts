@@ -81,6 +81,9 @@ router.post(
         customer: customerId,
         mode: 'subscription',
         payment_method_collection: 'if_required', // No credit card required for trial
+        metadata: {
+          appId: app.id,
+        },
         line_items: [
           {
             price: priceId,

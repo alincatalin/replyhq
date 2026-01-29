@@ -150,11 +150,32 @@ ChatSDK.setUser(
     )
 )
 
+// Update user identity without resetting the conversation
+ChatSDK.identify(
+    ChatUser(
+        id = "user_123",
+        name = "Jane Doe",
+        email = "jane@example.com"
+    )
+)
+
 // Clear user (call on logout)
 ChatSDK.clearUser()
 ```
 
-### 5.3 UI Components
+### 5.3 Event Tracking
+
+```kotlin
+// Track product events for analytics + workflow triggers
+ChatSDK.trackEvent(
+    eventName = "user_signup",
+    properties = mapOf("plan" to "free"),
+    userPlan = "free",
+    userCountry = "US"
+)
+```
+
+### 5.4 UI Components
 
 ```kotlin
 // Floating chat bubble (Composable)
@@ -170,7 +191,7 @@ fun ChatScreen(
 )
 ```
 
-### 5.4 Programmatic Control
+### 5.5 Programmatic Control
 
 ```kotlin
 ChatSDK.open()                      // Open chat programmatically
@@ -406,6 +427,7 @@ Base URL: https://api.replyhq.dev/v1
 Headers (all requests):
   X-App-Id: app_xxxxxxxxxxxxx
   X-Device-Id: <generated on first launch, persisted>
+  X-Api-Key: key_xxxxxxxxxxxxx
   X-SDK-Version: 1.0.0
   Content-Type: application/json
 ```
@@ -418,26 +440,105 @@ Headers (all requests):
 | POST | `/conversations/:id/messages` | Send a message |
 | GET | `/conversations/:id/messages?after=<ts>` | Fetch messages after timestamp |
 | POST | `/push-token` | Register push notification token |
+| POST | `/identify` | Identify a user for a device |
+| POST | `/events/track` | Track a user event |
 
-### 10.3 WebSocket
+### 10.3 Socket.IO
 
 ```
-URL: wss://api.replyhq.dev/v1/realtime?app_id=xxx&device_id=xxx
-
-Server → Client:
-  { "type": "message.new", "data": { "message": {...} } }
-  { "type": "agent.typing", "data": { "conversation_id": "conv_xxx" } }
+Path: /v1/socket.io
+Namespace: /client
+Auth payload: { app_id, device_id, api_key }
+SDK handles auth automatically from ChatConfig + generated deviceId.
 
 Client → Server:
-  { "type": "user.typing", "data": { "conversation_id": "conv_xxx" } }
-  { "type": "ping" }
+  conversation:join { conversation_id }
+  conversation:leave { conversation_id }
+  typing:start { conversation_id }
+  typing:stop { conversation_id }
+
+Server → Client:
+  connected
+  conversation:joined
+  message:new
+  user:typing
+  agent:typing
 ```
+
+Legacy WebSocket (`/v1/realtime`) remains supported for older SDKs.
 
 ---
 
-## 11. Platform-Specific Implementation
+## 11. SDK Usage Guide
 
-### 11.1 expect/actual Declarations
+### 11.1 Minimal Integration
+
+```kotlin
+ChatSDK.initialize(
+    initializer = ChatSDKInitializer(
+        appId = "app_xxx",
+        config = ChatConfig(
+            apiKey = "key_xxx",
+            network = NetworkConfig(
+                baseUrl = "https://api.replyhq.dev/v1",
+                websocketUrl = "wss://api.replyhq.dev/v1/socket.io/"
+            )
+        )
+    )
+)
+
+ChatSDK.setUser(
+    ChatUser(
+        id = "user_123",
+        name = "Jane Doe",
+        email = "jane@example.com"
+    )
+)
+```
+
+### 11.2 Identify + Track
+
+```kotlin
+ChatSDK.identify(ChatUser(id = "user_123", name = "Jane Doe"))
+
+ChatSDK.trackEvent(
+    eventName = "user_signup",
+    properties = mapOf("plan" to "free")
+)
+```
+
+### 11.3 Chat Lifecycle
+
+```kotlin
+ChatSDK.open()          // Marks read + syncs messages
+ChatSDK.close()         // Backgrounds the session
+
+ChatSDK.onAppForegrounded()
+ChatSDK.onAppBackgrounded()
+```
+
+### 11.4 Typing Indicators
+
+```kotlin
+ChatSDK.agentTypingEvents.collectLatest { event ->
+    // event.conversationId, event.isTyping
+}
+
+ChatSDK.startTyping()
+ChatSDK.stopTyping()
+```
+
+### 11.5 Push Notifications
+
+```kotlin
+ChatSDK.requestPushPermission()
+ChatSDK.updatePushToken(token)
+ChatSDK.handlePushNotification(payload, showNotification = true)
+```
+
+## 12. Platform-Specific Implementation
+
+### 12.1 expect/actual Declarations
 
 | Component | Android | iOS |
 |-----------|---------|-----|
@@ -446,7 +547,7 @@ Client → Server:
 | `PushNotifications` | Firebase Cloud Messaging | Apple Push Notification Service |
 | `Preferences` | `SharedPreferences` | `NSUserDefaults` |
 
-### 11.2 iOS Integration
+### 12.2 iOS Integration
 
 The SDK exposes an XCFramework (`sdkKit`) that can be consumed via:
 - Swift Package Manager
@@ -467,7 +568,7 @@ struct ContentView: View {
 
 ---
 
-## 12. Error Handling
+## 13. Error Handling
 
 | Scenario | Handling |
 |----------|----------|
@@ -485,9 +586,9 @@ struct ContentView: View {
 
 ---
 
-## 13. Dependencies
+## 14. Dependencies
 
-### 13.1 Common (KMP)
+### 14.1 Common (KMP)
 
 | Dependency | Purpose | Version |
 |------------|---------|---------|
@@ -498,7 +599,7 @@ struct ContentView: View {
 | SQLDelight | Local database | 2.x |
 | Kotlinx DateTime | Cross-platform time | 0.6.x |
 
-### 13.2 Android-Specific
+### 14.2 Android-Specific
 
 | Dependency | Purpose |
 |------------|---------|
@@ -506,7 +607,7 @@ struct ContentView: View {
 | Firebase Messaging | Push notifications |
 | AndroidX Lifecycle | Lifecycle awareness |
 
-### 13.3 iOS-Specific
+### 14.3 iOS-Specific
 
 | Dependency | Purpose |
 |------------|---------|
@@ -515,7 +616,7 @@ struct ContentView: View {
 
 ---
 
-## 14. Testing Requirements
+## 15. Testing Requirements
 
 ### 14.1 Connectivity Tests
 

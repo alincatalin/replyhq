@@ -16,6 +16,8 @@ import { createMessage } from './messageService.js';
 import * as presenceService from './presenceService.js';
 import * as deliveryReceiptService from './deliveryReceiptService.js';
 import { initializeTestConsole } from './testConsoleService.js';
+import { verifyApiKey } from '../lib/apiKey.js';
+import { verifyAccessToken } from '../lib/jwt.js';
 
 let io: Server;
 let clientNs: Namespace<any, any>;
@@ -120,7 +122,12 @@ function setupClientNamespace(): void {
         where: { id: app_id },
       });
 
-      if (!app || app.apiKey !== api_key) {
+      const validKey = !!app && (
+        (app.apiKey && app.apiKey === api_key) ||
+        verifyApiKey(api_key, app.apiKeyHash)
+      );
+
+      if (!validKey) {
         return next(new Error('INVALID_CREDENTIALS'));
       }
 
@@ -215,20 +222,40 @@ function setupAdminNamespace(): void {
         return next(new Error('MISSING_PARAMS'));
       }
 
-      // Validate app exists and admin token is valid
-      // For now: admin_token should match apiKey (same as clients)
-      // Future: separate admin token system
-      const app = await prisma.app.findUnique({
-        where: { id: app_id },
-      });
+      // Validate admin auth
+      // Preferred: JWT access token (admin_token)
+      let resolvedAppId = app_id;
+      let isJwt = false;
 
-      if (!app || app.apiKey !== admin_token) {
-        return next(new Error('INVALID_CREDENTIALS'));
+      if (typeof admin_token === 'string' && admin_token.split('.').length === 3) {
+        try {
+          const payload = verifyAccessToken(admin_token);
+          isJwt = true;
+          resolvedAppId = payload.appId;
+          if (app_id && app_id !== resolvedAppId) {
+            return next(new Error('INVALID_CREDENTIALS'));
+          }
+        } catch (error) {
+          return next(new Error('INVALID_CREDENTIALS'));
+        }
+      }
+
+      if (!isJwt) {
+        const app = await prisma.app.findUnique({
+          where: { id: app_id },
+        });
+        const validKey = !!app && (
+          (app.apiKey && app.apiKey === admin_token) ||
+          verifyApiKey(admin_token, app.apiKeyHash)
+        );
+        if (!validKey) {
+          return next(new Error('INVALID_CREDENTIALS'));
+        }
       }
 
       // Populate socket data
       socket.data = {
-        appId: app_id,
+        appId: resolvedAppId,
         connectionId: generateConnectionId(),
         subscribedConversations: new Set<string>(),
       };
@@ -260,12 +287,12 @@ function setupAdminNamespace(): void {
       console.log(`[Admin] Subscribed to app: ${appId}`);
     });
 
-    socket.on('conversation:join', (conversationId: string, callback) => {
-      handleAdminConversationJoin(socket, conversationId, callback);
+    socket.on('conversation:join', (payload: unknown, callback) => {
+      handleAdminConversationJoin(socket, payload, callback);
     });
 
-    socket.on('conversation:leave', (conversationId: string) => {
-      handleAdminConversationLeave(socket, conversationId);
+    socket.on('conversation:leave', (payload: unknown) => {
+      handleAdminConversationLeave(socket, payload);
     });
 
     socket.on('message:send', (data, callback) => {
@@ -276,12 +303,12 @@ function setupAdminNamespace(): void {
       handleSessionsList(socket, callback);
     });
 
-    socket.on('typing:start', (conversationId: string) => {
-      handleAdminTyping(socket, conversationId, true);
+    socket.on('typing:start', (payload: unknown) => {
+      handleAdminTyping(socket, payload, true);
     });
 
-    socket.on('typing:stop', (conversationId: string) => {
-      handleAdminTyping(socket, conversationId, false);
+    socket.on('typing:stop', (payload: unknown) => {
+      handleAdminTyping(socket, payload, false);
     });
 
     socket.on('ping', () => {
@@ -476,10 +503,18 @@ async function autoSubscribeToConversation(socket: ClientSocket): Promise<void> 
  */
 async function handleAdminConversationJoin(
   socket: AdminSocket,
-  conversationId: string,
+  payload: unknown,
   ack: (response: ConversationJoinResponse) => void
 ): Promise<void> {
   try {
+    const conversationId = extractConversationId(payload);
+    if (!conversationId) {
+      return ack({
+        success: false,
+        error: 'MISSING_CONVERSATION_ID',
+      });
+    }
+
     const { appId } = socket.data;
 
     // Validate conversation exists and belongs to this app
@@ -537,9 +572,13 @@ async function handleAdminConversationJoin(
  */
 async function handleAdminConversationLeave(
   socket: AdminSocket,
-  conversationId: string
+  payload: unknown
 ): Promise<void> {
   try {
+    const conversationId = extractConversationId(payload);
+    if (!conversationId) {
+      return;
+    }
     socket.leave(`conversation:${conversationId}`);
     socket.data.subscribedConversations.delete(conversationId);
     console.log(`[Admin] Left conversation: ${conversationId}`);
@@ -624,9 +663,13 @@ async function handleSessionsList(
  */
 function handleAdminTyping(
   socket: AdminSocket,
-  conversationId: string,
+  payload: unknown,
   isTyping: boolean
 ): void {
+  const conversationId = extractConversationId(payload);
+  if (!conversationId) {
+    return;
+  }
   // Broadcast to conversation room (all clients)
   clientNs.to(`conversation:${conversationId}`).emit('agent:typing', {
     conversation_id: conversationId,

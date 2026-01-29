@@ -840,7 +840,7 @@
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -849,12 +849,7 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
 
     <!-- Page-specific onboarding functionality -->
     <script src="/admin/js/onboarding.js"></script>

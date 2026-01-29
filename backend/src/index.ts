@@ -13,6 +13,8 @@ import {
 import { initSocketIO, gracefulShutdown as socketIOGracefulShutdown } from './services/socketService.js';
 import { initRedis, disconnectRedis } from './lib/redis.js';
 import { initFirebase } from './services/pushNotificationService.js';
+import { startBroadcastScheduler, stopBroadcastScheduler } from './services/broadcastScheduler.js';
+import { startWorkflowScheduler, stopWorkflowScheduler } from './services/workflowScheduler.js';
 
 let isShuttingDown = false;
 
@@ -61,6 +63,10 @@ async function main() {
   // Use traditional WebSocket service for admin
   await initAdminWebSocket();
 
+  // Start broadcast scheduler
+  startBroadcastScheduler();
+  startWorkflowScheduler();
+
   server.listen(config.port, '0.0.0.0', () => {
     console.log(`Server running on port ${config.port}`);
     console.log(`REST API: http://localhost:${config.port}/v1`);
@@ -84,6 +90,8 @@ async function main() {
 
     await socketIOGracefulShutdown();
     await wsGracefulShutdown();
+    stopBroadcastScheduler();
+    stopWorkflowScheduler();
 
     await disconnectRedis();
     await disconnectDatabase();

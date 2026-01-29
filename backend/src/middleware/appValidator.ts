@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { verifyApiKey } from '../lib/apiKey.js';
 
 interface CacheEntry {
   valid: boolean;
@@ -47,7 +48,10 @@ export async function validateAppId(req: Request, res: Response, next: NextFunct
 
   try {
     const app = await prisma.app.findUnique({ where: { id: appId } });
-    const valid = !!app && app.apiKey === apiKey;
+    const valid = !!app && (
+      (app.apiKey && app.apiKey === apiKey) ||
+      verifyApiKey(apiKey, app.apiKeyHash)
+    );
 
     if (appCache.size >= CACHE_MAX_SIZE) {
       const oldestKey = appCache.keys().next().value;

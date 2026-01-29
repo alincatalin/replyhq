@@ -22,7 +22,7 @@ actual class PushNotifications {
         val options = UNAuthorizationOptionAlert or UNAuthorizationOptionSound or UNAuthorizationOptionBadge
         center.requestAuthorizationWithOptions(options) { granted, error ->
             if (granted) {
-                UIApplication.sharedApplication.registerForRemoteNotifications()
+                // App should register for remote notifications in its UIApplication delegate.
             }
         }
     }

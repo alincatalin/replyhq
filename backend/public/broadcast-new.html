@@ -380,7 +380,7 @@
                 <h1>New Broadcast</h1>
                 <div class="header-actions">
                     <button class="btn btn-outline" onclick="window.location.href='broadcasts.html'">Cancel</button>
-                    <button class="btn btn-primary" onclick="window.location.href='broadcast-analytics.html'">
+                    <button class="btn btn-primary" id="send-broadcast-btn">
                         Send Broadcast
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
@@ -397,15 +397,15 @@
                         <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1.5rem;">Message Content</h2>
                         <div class="form-group">
                             <label class="form-label">Internal Name</label>
-                            <input type="text" class="form-input" placeholder="e.g. v2.4 Feature Announcement">
+                            <input type="text" class="form-input" id="broadcast-title" placeholder="e.g. v2.4 Feature Announcement">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Title (Push Notification)</label>
-                            <input type="text" class="form-input" placeholder="New features are here!">
+                            <input type="text" class="form-input" id="broadcast-push-title" placeholder="New features are here!">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Body (Markdown Supported)</label>
-                            <textarea class="form-textarea"
+                            <textarea class="form-textarea" id="broadcast-body"
                                 placeholder="Hello {{user.name}}, we have a new update..."></textarea>
                         </div>
                     </div>
@@ -414,7 +414,7 @@
                         <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1.5rem;">Target Audience</h2>
                         <div class="form-group">
                             <label class="form-label">Send To</label>
-                            <select class="form-select">
+                            <select class="form-select" id="broadcast-target">
                                 <option>All Users</option>
                                 <option>Active in last 30 days</option>
                                 <option>iOS Users Only</option>
@@ -451,7 +451,7 @@
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -460,12 +460,10 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
+
+    <!-- Page-specific scripts -->
+    <script src="/admin/js/broadcast-new.js"></script>
     
 </body>
 

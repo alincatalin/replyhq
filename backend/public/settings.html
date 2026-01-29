@@ -528,13 +528,38 @@
                     </div>
                 </div>
 
+                <!-- Webhooks -->
+                <div class="settings-section">
+                    <div class="section-heading">
+                        <h2>Webhooks</h2>
+                        <p>Send ReplyHQ events to your own backend.</p>
+                    </div>
+
+                    <div class="info-group" style="margin-bottom: 1rem;">
+                        <label class="info-label" for="webhook-url">Webhook URL</label>
+                        <input id="webhook-url" class="form-input" placeholder="https://example.com/webhooks" />
+                    </div>
+
+                    <div class="info-group" style="margin-bottom: 1rem;">
+                        <label class="info-label" for="webhook-events">Events (comma-separated)</label>
+                        <input id="webhook-events" class="form-input" placeholder="message.created, conversation.resolved" />
+                    </div>
+
+                    <button class="btn btn-primary" id="create-webhook-btn">Create Webhook</button>
+
+                    <div style="margin-top: 1.5rem;">
+                        <div class="info-label" style="margin-bottom: 0.5rem;">Configured Webhooks</div>
+                        <div id="webhooks-list" style="display: grid; gap: 0.75rem;"></div>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -543,15 +568,11 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
 
     <!-- Page-specific settings functionality -->
     <script src="/admin/js/settings.js"></script>
+    <script src="/admin/js/webhooks.js"></script>
 
 </body>
 

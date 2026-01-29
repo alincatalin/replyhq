@@ -6,6 +6,7 @@ import { generateConnectionId } from '../utils/ids.js';
 import { prisma } from '../lib/prisma.js';
 import { isRedisReady, publish, subscribe } from '../lib/redis.js';
 import { broadcastPresenceChange, removePresence, setPresence } from './presenceService.js';
+import { verifyApiKey } from '../lib/apiKey.js';
 
 interface ClientConnection {
   ws: WebSocket;
@@ -203,7 +204,8 @@ async function handleConnection(
     return null;
   }
 
-  if (app.apiKey !== apiKey) {
+  const validKey = (app.apiKey && app.apiKey === apiKey) || verifyApiKey(apiKey, app.apiKeyHash);
+  if (!validKey) {
     console.warn('Realtime invalid API key', { appId, deviceId });
     ws.send(JSON.stringify({
       type: 'error',
@@ -610,7 +612,8 @@ async function handleAdminConnection(
   }
 
   const app = await prisma.app.findUnique({ where: { id: appId } });
-  if (!app || app.apiKey !== apiKey) {
+  const validKey = !!app && ((app.apiKey && app.apiKey === apiKey) || verifyApiKey(apiKey, app.apiKeyHash));
+  if (!validKey) {
     ws.send(JSON.stringify({
       type: 'error',
       error: 'Invalid credentials',

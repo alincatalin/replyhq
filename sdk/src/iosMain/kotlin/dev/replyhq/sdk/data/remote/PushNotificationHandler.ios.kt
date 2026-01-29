@@ -18,10 +18,7 @@ actual class PushNotificationHandler actual constructor(
 
         if (!showNotification) return
 
-        val content = UNMutableNotificationContent().apply {
-            title = parsed.title ?: "New message"
-            body = parsed.body ?: "You have a new message"
-        }
+        val content = UNMutableNotificationContent()
 
         val request = UNNotificationRequest.requestWithIdentifier(
             identifier = parsed.messageId ?: NSUUID().UUIDString(),

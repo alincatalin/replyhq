@@ -115,6 +115,14 @@ object ChatSDK {
         val session = sessionManager ?: throw ChatSDKNotInitializedException()
         session.onAppBackgrounded()
     }
+
+    fun startTyping(conversationId: String? = null) {
+        connectionManager?.startTyping(conversationId)
+    }
+
+    fun stopTyping(conversationId: String? = null) {
+        connectionManager?.stopTyping(conversationId)
+    }
     
     fun onAppForegrounded() {
         sessionManager?.onAppForegrounded()
@@ -135,6 +143,21 @@ object ChatSDK {
             ?: throw IllegalStateException("No active conversation. Call setUser() first.")
         
         return sync.sendMessage(conversationId, content)
+    }
+
+    suspend fun identify(user: ChatUser): Boolean {
+        val session = sessionManager ?: throw ChatSDKNotInitializedException()
+        return session.identifyUser(user).getOrDefault(false)
+    }
+
+    suspend fun trackEvent(
+        eventName: String,
+        properties: Map<String, String>? = null,
+        userPlan: String? = null,
+        userCountry: String? = null
+    ): Boolean {
+        val session = sessionManager ?: throw ChatSDKNotInitializedException()
+        return session.trackEvent(eventName, properties, userPlan, userCountry).getOrDefault(false)
     }
     
     fun getMessages(): Flow<List<Message>> {

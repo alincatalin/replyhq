@@ -85,7 +85,7 @@ router.post(
  * Handle checkout session completed
  */
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  const appId = session.subscription_data?.metadata?.appId;
+  const appId = session.metadata?.appId;
   const customerId = session.customer as string;
   const subscriptionId = session.subscription as string;
 

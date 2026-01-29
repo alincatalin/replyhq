@@ -22,6 +22,7 @@ async function initDashboard() {
     // Load initial data
     await loadConversations();
     await loadStats();
+    await loadAnalyticsOverview();
 
     // Set up search
     setupSearch();
@@ -30,6 +31,34 @@ async function initDashboard() {
   } catch (error) {
     console.error('[Dashboard] Initialization error:', error);
     showToast('Failed to load dashboard', 'error');
+  }
+}
+
+// Load analytics overview from API
+async function loadAnalyticsOverview() {
+  try {
+    const data = await apiGet('/admin/analytics/overview');
+
+    updateStat('analytics-total-events', data.totalEvents ?? 0);
+    updateStat('analytics-unique-users', data.uniqueUsers ?? 0);
+
+    const list = document.getElementById('analytics-top-events');
+    if (!list) return;
+
+    const topEvents = data.topEvents || [];
+    if (topEvents.length === 0) {
+      list.innerHTML = '<li style=\"color: var(--text-dim);\">No events yet</li>';
+      return;
+    }
+
+    list.innerHTML = topEvents.map(event => `
+      <li style=\"display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border);\">
+        <span>${escapeHtml(event.eventName || event.event_name || 'Unknown')}</span>
+        <span style=\"color: var(--text-dim);\">${formatNumber(event.count ?? 0)}</span>
+      </li>
+    `).join('');
+  } catch (error) {
+    console.error('[Dashboard] Error loading analytics overview:', error);
   }
 }
 
@@ -48,7 +77,7 @@ async function loadConversations() {
       status: user.status,
       metadata: {
         userName: user.display_name,
-        device: {} // TODO: Extract from conversation data if available
+        device: user.device_context || {}
       },
       lastMessage: user.last_message ? {
         body: user.last_message,
@@ -73,13 +102,21 @@ async function loadConversations() {
 // Load dashboard stats
 async function loadStats() {
   try {
-    // TODO: Add analytics endpoint for dashboard stats
-    // For now, calculate from conversations
+    const stats = await apiGet('/admin/api/dashboard/stats');
+
+    if (stats) {
+      updateStat('total-conversations', stats.total_conversations ?? 0);
+      updateStat('open-conversations', stats.open_conversations ?? 0);
+      updateStat('resolved-conversations', stats.resolved_conversations ?? 0);
+      updateStat('online-conversations', stats.online_conversations ?? 0);
+      return;
+    }
+
+    // Fallback to client-side calculation if API is unavailable
     const totalConversations = conversations.length;
     const openConversations = conversations.filter(c => c.status === 'open').length;
     const resolvedConversations = conversations.filter(c => c.status === 'resolved').length;
 
-    // Update stats in UI
     updateStat('total-conversations', totalConversations);
     updateStat('open-conversations', openConversations);
     updateStat('resolved-conversations', resolvedConversations);

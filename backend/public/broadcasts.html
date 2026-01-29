@@ -421,80 +421,14 @@
                 <!-- Past Broadcasts -->
                 <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Recent Broadcasts</h2>
 
-                <div class="broadcast-list">
-                    <a href="broadcast-analytics.html" class="broadcast-item">
-                        <div class="broadcast-info">
-                            <h3>v2.4.0 Release Notes <span class="status-badge">Sent</span></h3>
-                            <div class="broadcast-meta">
-                                <span>Sent Feb 24, 2026</span>
-                                <span>•</span>
-                                <span>All Users</span>
-                            </div>
-                        </div>
-                        <div class="broadcast-stats">
-                            <div class="b-stat">
-                                <span class="b-stat-val">3.2k</span>
-                                <span class="b-stat-label">Sent</span>
-                            </div>
-                            <div class="b-stat">
-                                <span class="b-stat-val">45%</span>
-                                <span class="b-stat-label">Opened</span>
-                            </div>
-                            <div class="b-stat">
-                                <span class="b-stat-val">12%</span>
-                                <span class="b-stat-label">Clicked</span>
-                            </div>
-                        </div>
-                    </a>
-
-                    <a href="#" class="broadcast-item">
-                        <div class="broadcast-info">
-                            <h3>Scheduled Maintenance <span class="status-badge">Sent</span></h3>
-                            <div class="broadcast-meta">
-                                <span>Sent Feb 10, 2026</span>
-                                <span>•</span>
-                                <span>Pro Plan Users</span>
-                            </div>
-                        </div>
-                        <div class="broadcast-stats">
-                            <div class="b-stat">
-                                <span class="b-stat-val">842</span>
-                                <span class="b-stat-label">Sent</span>
-                            </div>
-                            <div class="b-stat">
-                                <span class="b-stat-val">78%</span>
-                                <span class="b-stat-label">Opened</span>
-                            </div>
-                            <div class="b-stat">
-                                <span class="b-stat-val">2%</span>
-                                <span class="b-stat-label">Clicked</span>
-                            </div>
-                        </div>
-                    </a>
-
-                    <a href="#" class="broadcast-item">
-                        <div class="broadcast-info">
-                            <h3>Welcome to ReplyHQ <span class="status-badge"
-                                    style="background: rgba(234, 179, 8, 0.1); color: var(--warning);">Draft</span></h3>
-                            <div class="broadcast-meta">
-                                <span>Edited 2 days ago</span>
-                                <span>•</span>
-                                <span>New Users</span>
-                            </div>
-                        </div>
-                        <div class="broadcast-stats">
-                            <button class="btn btn-outline"
-                                style="padding: 0.4rem 1rem; font-size: 0.85rem;">Edit</button>
-                        </div>
-                    </a>
-                </div>
+                <div class="broadcast-list" id="broadcasts-list"></div>
             </div>
         </main>
     </div>
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -503,12 +437,10 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
+
+    <!-- Page-specific scripts -->
+    <script src="/admin/js/broadcasts.js"></script>
     
 </body>
 

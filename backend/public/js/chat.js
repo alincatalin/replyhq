@@ -5,6 +5,7 @@
 
 let socket = null;
 let conversationId = null;
+let conversations = [];
 let messages = [];
 let typingTimeout = null;
 let userTypingTimeout = null;
@@ -16,8 +17,11 @@ async function initChat() {
     // Get conversation ID from URL
     conversationId = getQueryParam('id');
     if (!conversationId) {
-      showToast('No conversation selected', 'error');
-      window.location.href = '/admin/dashboard.html';
+      await loadConversations();
+      setupSearch();
+      setupNewConversation();
+      renderEmptyConversationState();
+      console.log('[Chat] Initialized without active conversation');
       return;
     }
 
@@ -36,6 +40,9 @@ async function initChat() {
 
     // Load messages
     await loadMessages();
+    await loadConversations();
+    setupSearch();
+    setupNewConversation();
 
     // Setup message input
     setupMessageInput();
@@ -50,6 +57,9 @@ async function initChat() {
 // Load messages from API
 async function loadMessages() {
   try {
+    if (!conversationId) {
+      return;
+    }
     const data = await apiGet(`/admin/api/conversations/${conversationId}/messages`);
 
     // API returns { messages: [...] } with snake_case fields
@@ -69,6 +79,151 @@ async function loadMessages() {
     console.error('[Chat] Error loading messages:', error);
     showToast(handleApiError(error, 'Failed to load messages'), 'error');
   }
+}
+
+// Load conversations list
+async function loadConversations() {
+  try {
+    const data = await apiGet('/admin/api/users');
+    conversations = (data.users || []).map(user => ({
+      id: user.conversation_id,
+      userId: user.user_id,
+      deviceId: user.device_id,
+      status: user.status,
+      lastMessage: user.last_message ? {
+        body: user.last_message,
+        sender: user.last_sender,
+        createdAt: user.last_message_at
+      } : null,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      isOnline: user.is_online,
+      displayName: user.display_name,
+      deviceContext: user.device_context || {}
+    }));
+
+    renderConversationsList(conversations);
+  } catch (error) {
+    console.error('[Chat] Error loading conversations:', error);
+    showToast(handleApiError(error, 'Failed to load conversations'), 'error');
+  }
+}
+
+// Render conversations list in sidebar
+function renderConversationsList(conversations) {
+  const listContainer = document.querySelector('.conversations-list');
+  if (!listContainer) return;
+
+  if (conversations.length === 0) {
+    listContainer.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: var(--text-dim);">
+        <p>No conversations yet</p>
+      </div>
+    `;
+    return;
+  }
+
+  listContainer.innerHTML = conversations.map(conversation => {
+    const userName = conversation.displayName || `User ${conversation.deviceId?.substring(0, 6)}`;
+    const initials = getInitials(userName);
+    const avatarGradient = getAvatarGradient(conversation.deviceId || conversation.id);
+    const lastMessageText = conversation.lastMessage?.body || 'No messages yet';
+    const lastMessageTime = conversation.lastMessage?.createdAt ? formatRelativeTime(conversation.lastMessage.createdAt) : formatRelativeTime(conversation.createdAt);
+    const lastMessageSender = conversation.lastMessage?.sender === 'agent' ? 'You: ' : '';
+    const isActive = conversation.id === conversationId;
+
+    return `
+      <a href="/admin/chat.html?id=${conversation.id}" class="conversation-item ${isActive ? 'active' : ''}">
+        <div class="conversation-avatar" style="background: ${avatarGradient};">${initials}</div>
+        <div class="conversation-content">
+          <div class="conversation-header">
+            <span class="conversation-user">${escapeHtml(userName)}</span>
+            <span class="conversation-time">${lastMessageTime}</span>
+          </div>
+          <div class="conversation-preview">
+            ${escapeHtml(lastMessageSender + truncate(lastMessageText, 60))}
+          </div>
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderEmptyConversationState() {
+  const header = document.querySelector('.chat-header');
+  const messagesContainer = document.querySelector('.messages-area');
+  const messageInput = document.querySelector('.chat-input');
+  const sendButton = document.querySelector('.send-btn');
+
+  if (header) {
+    header.innerHTML = `
+      <div class="chat-user-info">
+        <div class="conversation-avatar">?</div>
+        <div>
+          <div class="chat-user-name">Select a conversation</div>
+          <div class="chat-user-meta">Choose a message thread from the left</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (messagesContainer) {
+    messagesContainer.innerHTML = `
+      <div style="text-align: center; padding: 3rem; color: var(--text-dim);">
+        <p>No conversation selected</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+          Pick a conversation or start a new one
+        </p>
+      </div>
+    `;
+  }
+
+  if (messageInput) {
+    messageInput.disabled = true;
+  }
+  if (sendButton) {
+    sendButton.disabled = true;
+  }
+}
+
+function setupSearch() {
+  const searchInput = document.querySelector('.search-box');
+  if (!searchInput) return;
+
+  searchInput.addEventListener('input', (event) => {
+    const query = event.target.value.toLowerCase();
+    const filtered = conversations.filter((conversation) => {
+      const name = conversation.displayName || '';
+      const lastMessage = conversation.lastMessage?.body || '';
+      return name.toLowerCase().includes(query) || lastMessage.toLowerCase().includes(query);
+    });
+    renderConversationsList(filtered);
+  });
+}
+
+function setupNewConversation() {
+  const button = document.getElementById('new-conversation-btn');
+  if (!button) return;
+
+  button.addEventListener('click', async (event) => {
+    event.preventDefault();
+    const deviceId = window.prompt('Enter device ID (required)');
+    if (!deviceId) return;
+    const userId = window.prompt('Enter user ID (optional)') || '';
+
+    try {
+      const response = await apiPost('/admin/api/conversations', {
+        device_id: deviceId.trim(),
+        user_id: userId.trim() || undefined
+      });
+      if (response?.conversation?.id) {
+        window.location.href = `/admin/chat.html?id=${response.conversation.id}`;
+      }
+    } catch (error) {
+      console.error('[Chat] Error creating conversation:', error);
+      showToast(handleApiError(error, 'Failed to create conversation'), 'error');
+    }
+  });
 }
 
 // Render all messages

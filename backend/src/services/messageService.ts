@@ -6,6 +6,7 @@ import type { CreateMessageInput } from '../schemas/message.js';
 import { broadcastToConversation } from './socketService.js';
 import { getConversationForDevice } from './conversationService.js';
 import { sendPushNotification } from './pushNotificationService.js';
+import { dispatchWebhook } from './webhookDispatchService.js';
 
 export interface MessageResponse {
   id: string;
@@ -63,8 +64,22 @@ export async function createMessage(
       broadcastToConversation(conversationId, 'message:new', formattedMessage);
 
       if (sender !== 'user') {
-        void sendPushNotification(conversation.appId, conversation.deviceId, formattedMessage);
+        void sendPushNotification(conversation.deviceId, {
+          body: formattedMessage.body,
+          conversationId: conversationId,
+          messageId: formattedMessage.id,
+        });
       }
+
+      void dispatchWebhook(appId, 'message.created', {
+        message_id: formattedMessage.id,
+        conversation_id: conversationId,
+        body: formattedMessage.body,
+        sender: formattedMessage.sender,
+        created_at: formattedMessage.created_at,
+        user_id: conversation.userId ?? null,
+        device_id: conversation.deviceId,
+      });
     }
 
     return formattedMessage;

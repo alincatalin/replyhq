@@ -380,8 +380,8 @@
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <a href="broadcasts.html" class="btn btn-outline"
                         style="padding: 0.5rem; border: none; color: var(--text-dim)">&larr;</a>
-                    <h1>v2.4.0 Release Notes</h1>
-                    <span
+                    <h1 id="broadcast-title">Broadcast</h1>
+                    <span id="broadcast-status"
                         style="background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">Sent</span>
                 </div>
                 <div class="header-actions">
@@ -394,15 +394,15 @@
                 <!-- High Level Stats -->
                 <div class="stats-overview">
                     <div class="stat-block">
-                        <div class="stat-main">3,241</div>
+                        <div class="stat-main" id="broadcast-sent">0</div>
                         <div class="stat-sub">Users Sent</div>
                     </div>
                     <div class="stat-block">
-                        <div class="stat-main">45%</div>
+                        <div class="stat-main" id="broadcast-open-rate">0%</div>
                         <div class="stat-sub">Open Rate</div>
                     </div>
                     <div class="stat-block">
-                        <div class="stat-main">12%</div>
+                        <div class="stat-main" id="broadcast-click-rate">0%</div>
                         <div class="stat-sub">Click Rate</div>
                     </div>
                     <div class="stat-block">
@@ -527,7 +527,7 @@
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -536,12 +536,10 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
+
+    <!-- Page-specific scripts -->
+    <script src="/admin/js/broadcast-analytics.js"></script>
     
 </body>
 

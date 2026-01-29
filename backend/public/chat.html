@@ -602,7 +602,12 @@
             <!-- Conversations List -->
             <aside class="conversations-sidebar">
                 <div class="conversations-header">
-                    <h2>Messages</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                        <h2>Messages</h2>
+                        <button class="btn btn-outline" id="new-conversation-btn" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+                            New
+                        </button>
+                    </div>
                     <input type="text" class="search-box" placeholder="Search conversations...">
                 </div>
                 <div class="conversations-list">
@@ -792,7 +797,7 @@
 
     
     <!-- Load Socket.IO client from CDN -->
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/admin/js/vendor/socket.io.min.js"></script>
     
     <!-- Load shared utilities -->
     <script src="/admin/js/auth.js"></script>
@@ -801,12 +806,7 @@
     <script src="/admin/js/utils.js"></script>
     
     <!-- Auth protection -->
-    <script>
-        // Redirect to login if not authenticated
-        if (!requireAuth()) {
-            // requireAuth() handles redirect
-        }
-    </script>
+    <script src="/admin/js/page-auth.js"></script>
     
     
     <!-- Page-specific chat functionality -->

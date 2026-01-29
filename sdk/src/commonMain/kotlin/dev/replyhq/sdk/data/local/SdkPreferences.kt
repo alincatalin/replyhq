@@ -11,6 +11,7 @@ class SdkPreferences(
         private const val KEY_USER_ID = "replyhq_user_id"
         private const val KEY_PUSH_TOKEN = "replyhq_push_token"
         private const val KEY_LAST_SYNC_TIMESTAMP = "replyhq_last_sync_timestamp"
+        private const val KEY_LAST_SYNC_SEQUENCE = "replyhq_last_sync_sequence"
         private const val KEY_UNREAD_COUNT = "replyhq_unread_count"
     }
 
@@ -34,6 +35,10 @@ class SdkPreferences(
         get() = preferences.getLong(KEY_LAST_SYNC_TIMESTAMP)
         set(value) = preferences.putLong(KEY_LAST_SYNC_TIMESTAMP, value)
 
+    var lastSyncSequence: Long
+        get() = preferences.getLong(KEY_LAST_SYNC_SEQUENCE)
+        set(value) = preferences.putLong(KEY_LAST_SYNC_SEQUENCE, value)
+
     var unreadCount: Int
         get() = preferences.getInt(KEY_UNREAD_COUNT)
         set(value) = preferences.putInt(KEY_UNREAD_COUNT, value)
@@ -43,6 +48,7 @@ class SdkPreferences(
         preferences.remove(KEY_USER_ID)
         preferences.remove(KEY_PUSH_TOKEN)
         preferences.remove(KEY_LAST_SYNC_TIMESTAMP)
+        preferences.remove(KEY_LAST_SYNC_SEQUENCE)
         preferences.remove(KEY_UNREAD_COUNT)
     }
 

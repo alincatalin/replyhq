@@ -55,6 +55,7 @@ class SyncManager(
     val agentTypingEvents: Flow<AgentTypingEvent> = _agentTypingEvents.asSharedFlow()
 
     private var lastKnownMessageId: String? = null
+    private var lastAgentMessageId: String? = null
 
     init {
         _unreadCount.value = preferences.unreadCount
@@ -102,35 +103,48 @@ class SyncManager(
     
     @OptIn(ExperimentalTime::class)
     suspend fun fetchMissedMessages(conversationId: String) {
-        // Use cursor-based sync with lastMessageId if available, otherwise fall back to timestamp
-        val afterTimestamp = if (lastKnownMessageId == null && preferences.lastSyncTimestamp > 0) {
-            preferences.lastSyncTimestamp
-        } else {
-            null
-        }
+        var afterSequence = preferences.lastSyncSequence
+        var hasMore = true
 
-        val result = chatApi.fetchMessages(conversationId, afterTimestamp)
+        while (hasMore) {
+            val result = chatApi.syncMessages(conversationId, afterSequence)
+            if (result.isFailure) {
+                break
+            }
 
-        result.onSuccess { response ->
+            val response = result.getOrNull() ?: break
+
             response.messages.forEach { serverMessage ->
                 val existingMessage = database.getMessageByLocalId(serverMessage.localId).first()
                 if (existingMessage == null) {
                     database.insertMessage(serverMessage)
                     if (serverMessage.senderType != SenderType.USER) {
                         incrementUnreadCount()
+                        lastAgentMessageId = serverMessage.id
+                        serverMessage.id?.let { id ->
+                            chatApi.markDelivered(conversationId, listOf(id))
+                        }
                         _newMessages.emit(serverMessage)
                     }
                     // Update last known message ID for cursor-based sync
                     lastKnownMessageId = serverMessage.id
                 }
             }
+            afterSequence = response.lastSequence
+            preferences.lastSyncSequence = response.lastSequence
             preferences.lastSyncTimestamp = Clock.System.now().toEpochMilliseconds()
+            hasMore = response.hasMore
         }
     }
     
     fun markAsRead() {
         _unreadCount.value = 0
         preferences.unreadCount = 0
+        val conversationId = preferences.currentConversationId ?: return
+        val upToMessageId = lastAgentMessageId
+        scope.launch {
+            chatApi.markRead(conversationId, upToMessageId)
+        }
     }
     
     fun getMessages(conversationId: String): Flow<List<Message>> {
@@ -179,6 +193,10 @@ class SyncManager(
 
                     if (message.senderType != SenderType.USER) {
                         incrementUnreadCount()
+                        lastAgentMessageId = message.id
+                        message.id?.let { id ->
+                            chatApi.markDelivered(message.conversationId, listOf(id))
+                        }
                     }
 
                     _newMessages.emit(message)
@@ -210,6 +228,10 @@ class SyncManager(
 
                             if (message.senderType != SenderType.USER) {
                                 incrementUnreadCount()
+                                lastAgentMessageId = message.id
+                                message.id?.let { id ->
+                                    chatApi.markDelivered(message.conversationId, listOf(id))
+                                }
                             }
 
                             _newMessages.emit(message)
@@ -221,6 +243,13 @@ class SyncManager(
                     }
                 } catch (e: Exception) {
                     // Silently ignore parse errors
+                }
+            }
+            is SocketIOEvent.ConnectionEstablished -> {
+                val conversationId = preferences.currentConversationId ?: return
+                scope.launch {
+                    fetchMissedMessages(conversationId)
+                    syncQueuedMessages()
                 }
             }
             is SocketIOEvent.AgentTyping -> {
@@ -247,6 +276,16 @@ class SyncManager(
     @OptIn(ExperimentalTime::class)
     private fun parseMessageFromJson(data: kotlinx.serialization.json.JsonObject): Message? {
         return try {
+            val createdAtRaw = data["created_at"]?.jsonPrimitive?.content
+            val createdAt = try {
+                if (createdAtRaw != null) {
+                    kotlin.time.Instant.parse(createdAtRaw)
+                } else {
+                    Clock.System.now()
+                }
+            } catch (e: Exception) {
+                Clock.System.now()
+            }
             Message(
                 id = data["id"]?.jsonPrimitive?.content,
                 localId = data["local_id"]?.jsonPrimitive?.content ?: "",
@@ -258,7 +297,7 @@ class SyncManager(
                     "system" -> SenderType.SYSTEM
                     else -> SenderType.USER
                 },
-                sentAt = Clock.System.now(),
+                sentAt = createdAt,
                 status = when (data["status"]?.jsonPrimitive?.content) {
                     "QUEUED" -> MessageStatus.QUEUED
                     "SENDING" -> MessageStatus.SENDING

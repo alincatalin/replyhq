@@ -27,6 +27,24 @@ export enum Permission {
 
   // Analytics permissions
   VIEW_ANALYTICS = 'view:analytics',
+
+  // Broadcasts permissions
+  VIEW_BROADCASTS = 'view:broadcasts',
+  CREATE_BROADCASTS = 'create:broadcasts',
+  EDIT_BROADCASTS = 'edit:broadcasts',
+  DELETE_BROADCASTS = 'delete:broadcasts',
+  SEND_BROADCASTS = 'send:broadcasts',
+
+  // Workflows permissions
+  VIEW_WORKFLOWS = 'view:workflows',
+  CREATE_WORKFLOWS = 'create:workflows',
+  EDIT_WORKFLOWS = 'edit:workflows',
+  DELETE_WORKFLOWS = 'delete:workflows',
+  MANAGE_WORKFLOWS = 'manage:workflows',
+
+  // Webhooks permissions
+  VIEW_WEBHOOKS = 'view:webhooks',
+  MANAGE_WEBHOOKS = 'manage:webhooks',
 }
 
 /**
@@ -47,6 +65,18 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.VIEW_BILLING,
     Permission.MANAGE_BILLING,
     Permission.VIEW_ANALYTICS,
+    Permission.VIEW_BROADCASTS,
+    Permission.CREATE_BROADCASTS,
+    Permission.EDIT_BROADCASTS,
+    Permission.DELETE_BROADCASTS,
+    Permission.SEND_BROADCASTS,
+    Permission.VIEW_WORKFLOWS,
+    Permission.CREATE_WORKFLOWS,
+    Permission.EDIT_WORKFLOWS,
+    Permission.DELETE_WORKFLOWS,
+    Permission.MANAGE_WORKFLOWS,
+    Permission.VIEW_WEBHOOKS,
+    Permission.MANAGE_WEBHOOKS,
   ],
   ADMIN: [
     // Admins can manage conversations, users, and view most things
@@ -60,12 +90,27 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.MANAGE_SETTINGS,
     Permission.VIEW_BILLING,
     Permission.VIEW_ANALYTICS,
+    Permission.VIEW_BROADCASTS,
+    Permission.CREATE_BROADCASTS,
+    Permission.EDIT_BROADCASTS,
+    Permission.DELETE_BROADCASTS,
+    Permission.SEND_BROADCASTS,
+    Permission.VIEW_WORKFLOWS,
+    Permission.CREATE_WORKFLOWS,
+    Permission.EDIT_WORKFLOWS,
+    Permission.DELETE_WORKFLOWS,
+    Permission.MANAGE_WORKFLOWS,
+    Permission.VIEW_WEBHOOKS,
+    Permission.MANAGE_WEBHOOKS,
   ],
   AGENT: [
     // Agents can only view and respond to conversations
     Permission.VIEW_CONVERSATIONS,
     Permission.SEND_MESSAGES,
     Permission.VIEW_USERS,
+    Permission.VIEW_ANALYTICS,
+    Permission.VIEW_BROADCASTS,
+    Permission.VIEW_WORKFLOWS,
   ],
 };
 

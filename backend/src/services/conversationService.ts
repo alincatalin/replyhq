@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { generateConversationId, generateVisitorId } from '../utils/ids.js';
 import { subscribeDeviceToConversation } from './websocketService.js';
 import type { CreateConversationInput } from '../schemas/conversation.js';
+import { dispatchWebhook } from './webhookDispatchService.js';
 
 export interface ConversationResponse {
   id: string;
@@ -56,6 +57,13 @@ export async function getOrCreateConversation(
   });
 
   const formatted = formatConversation(conversation);
+  void dispatchWebhook(appId, 'conversation.created', {
+    conversation_id: formatted.id,
+    user_id: userId,
+    device_id: deviceId,
+    status: formatted.status,
+    created_at: formatted.created_at,
+  });
   await subscribeDeviceToConversation(appId, deviceId, formatted.id);
   return formatted;
 }

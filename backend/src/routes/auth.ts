@@ -2,9 +2,114 @@ import express, { Request, Response, NextFunction, type IRouter } from 'express'
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
 import { generateAccessToken, generateRefreshToken, getTokenExpiry, verifyAccessToken, type JWTPayload } from '../lib/jwt.js';
+import { generateApiKey, hashApiKey } from '../lib/apiKey.js';
 import { strictRateLimit } from '../middleware/rateLimit.js';
 
 const router: IRouter = express.Router();
+
+/**
+ * POST /admin/auth/signup
+ * Create an admin user and initial app (1 account = 1 app)
+ */
+router.post('/signup', strictRateLimit, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password, appName } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        code: 'MISSING_FIELDS',
+        message: 'email and password are required',
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: 'Weak password',
+        code: 'WEAK_PASSWORD',
+        message: 'Password must be at least 8 characters',
+      });
+    }
+
+    const existingUser = await prisma.adminUser.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: 'User already exists',
+        code: 'USER_EXISTS',
+        message: 'An account with this email already exists',
+      });
+    }
+
+    const apiKey = generateApiKey();
+    const apiKeyHash = hashApiKey(apiKey);
+    const app = await prisma.app.create({
+      data: {
+        name: appName?.trim() || 'ReplyHQ App',
+        apiKeyHash,
+      },
+      select: { id: true, name: true },
+    });
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const adminUser = await prisma.adminUser.create({
+      data: {
+        email,
+        passwordHash,
+        role: 'OWNER',
+        appId: app.id,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        appId: true,
+      },
+    });
+
+    const tokenPayload: JWTPayload = {
+      userId: adminUser.id,
+      appId: adminUser.appId,
+      role: adminUser.role,
+      email: adminUser.email,
+    };
+
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken();
+    const { refreshTokenExpiresAt } = getTokenExpiry();
+
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: adminUser.id,
+        expiresAt: refreshTokenExpiresAt,
+      },
+    });
+
+    return res.json({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: 'Bearer',
+      expires_in: 900,
+      app: {
+        id: app.id,
+        name: app.name,
+        api_key: apiKey,
+      },
+      user: {
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+        app_id: adminUser.appId,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * POST /admin/auth/login

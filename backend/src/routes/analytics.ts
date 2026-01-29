@@ -5,6 +5,7 @@ import { requirePermission, Permission } from '../middleware/permissions.js';
 import * as analyticsService from '../services/analyticsService.js';
 import * as segmentationService from '../services/segmentationService.js';
 import { validateSegmentQuery, describeSegmentQuery } from '../lib/queryDSL.js';
+import { triggerWorkflows } from '../services/workflowTriggerService.js';
 
 const router: IRouter = express.Router();
 
@@ -39,6 +40,14 @@ router.post(
         sessionId,
         platform,
         appVersion,
+      });
+
+      await triggerWorkflows({
+        appId,
+        userId,
+        sessionId: sessionId ?? undefined,
+        eventName,
+        properties,
       });
 
       return res.json({ success: true });

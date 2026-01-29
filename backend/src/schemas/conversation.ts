@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const deviceContextSchema = z.object({
-  platform: z.enum(['android', 'ios']),
+  platform: z.enum(['android', 'ios', 'web', 'desktop']),
   os_version: z.string().optional(),
   app_version: z.string().optional(),
   device_model: z.string().optional(),

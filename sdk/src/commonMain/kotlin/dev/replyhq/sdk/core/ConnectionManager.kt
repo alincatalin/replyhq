@@ -97,6 +97,22 @@ class ConnectionManager(
         }
     }
 
+    fun startTyping(conversationId: String? = null) {
+        val targetId = conversationId ?: activeConversationId ?: return
+        if (_state.value != ConnectionState.CONNECTED) return
+        scope.launch {
+            socketClient.startTyping(targetId)
+        }
+    }
+
+    fun stopTyping(conversationId: String? = null) {
+        val targetId = conversationId ?: activeConversationId ?: return
+        if (_state.value != ConnectionState.CONNECTED) return
+        scope.launch {
+            socketClient.stopTyping(targetId)
+        }
+    }
+
     fun pause() {
         isPaused = true
         reconnectJob?.cancel()

@@ -92,7 +92,7 @@ export function initializeTestConsole(io: Server): void {
 /**
  * Broadcast SDK event to test console for specific app
  */
-export function broadcastSDKEvent(appId: string, event: SDKEvent): void {
+export async function broadcastSDKEvent(appId: string, event: SDKEvent): Promise<void> {
   if (!testConsoleNs) {
     console.warn('[TestConsole] Test console not initialized, skipping event broadcast');
     return;
@@ -101,7 +101,7 @@ export function broadcastSDKEvent(appId: string, event: SDKEvent): void {
   const room = `app:${appId}:events`;
 
   // Get all sockets in the room
-  const sockets = Array.from(testConsoleNs.in(room).sockets.values());
+  const sockets = await testConsoleNs.in(room).fetchSockets();
 
   // Emit to non-paused sockets only
   sockets.forEach((socket) => {
@@ -122,7 +122,7 @@ export function broadcastSDKEvent(appId: string, event: SDKEvent): void {
  */
 export const SDKEvents = {
   connection: (appId: string, deviceId: string, userId?: string) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'connection',
       data: { deviceId, userId },
@@ -132,7 +132,7 @@ export const SDKEvents = {
   },
 
   disconnection: (appId: string, deviceId: string, userId?: string) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'disconnection',
       data: { deviceId, userId },
@@ -142,7 +142,7 @@ export const SDKEvents = {
   },
 
   messageSent: (appId: string, conversationId: string, messageId: string, deviceId: string, userId?: string) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'message_sent',
       data: { conversationId, messageId },
@@ -153,7 +153,7 @@ export const SDKEvents = {
   },
 
   messageDelivered: (appId: string, conversationId: string, messageId: string, deviceId: string) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'message_delivered',
       data: { conversationId, messageId },
@@ -163,7 +163,7 @@ export const SDKEvents = {
   },
 
   messageRead: (appId: string, conversationId: string, messageId: string, deviceId: string) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'message_read',
       data: { conversationId, messageId },
@@ -173,7 +173,7 @@ export const SDKEvents = {
   },
 
   userIdentified: (appId: string, deviceId: string, userId: string, traits?: Record<string, any>) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'user_identified',
       data: { deviceId, userId, traits },
@@ -183,7 +183,7 @@ export const SDKEvents = {
   },
 
   error: (appId: string, errorType: string, errorMessage: string, deviceId?: string) => {
-    broadcastSDKEvent(appId, {
+    void broadcastSDKEvent(appId, {
       timestamp: new Date().toISOString(),
       type: 'error',
       data: { errorType, errorMessage },

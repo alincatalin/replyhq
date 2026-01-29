@@ -50,6 +50,9 @@ class SessionManager(
         _currentUser.value = user
         preferences.userId = user.id
 
+        // Best-effort user identification without blocking conversation setup
+        runCatching { chatApi.identifyUser(user) }
+
         return startOrContinueConversation(user)
     }
     
@@ -105,6 +108,32 @@ class SessionManager(
     
     fun getDeviceContext(): DeviceContext {
         return deviceContextCollector.collect()
+    }
+
+    suspend fun identifyUser(user: ChatUser): Result<Boolean> {
+        _currentUser.value = user
+        preferences.userId = user.id
+        return chatApi.identifyUser(user)
+    }
+
+    suspend fun trackEvent(
+        eventName: String,
+        properties: Map<String, String>? = null,
+        userPlan: String? = null,
+        userCountry: String? = null
+    ): Result<Boolean> {
+        val user = _currentUser.value ?: return Result.failure(IllegalStateException("No active user"))
+        val context = getDeviceContext()
+        return chatApi.trackEvent(
+            userId = user.id,
+            eventName = eventName,
+            properties = properties,
+            userPlan = userPlan,
+            userCountry = userCountry,
+            sessionId = deviceId,
+            platform = context.platform,
+            appVersion = context.appVersion
+        )
     }
     
     fun reset() {

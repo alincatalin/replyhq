@@ -42,6 +42,8 @@ This document explains how the backend works, current limits, and what’s requi
 - `POST /v1/conversations/:id/messages/status` → update status
 - `POST /v1/conversations/:id/messages/delivered` → mark delivered
 - `POST /v1/conversations/:id/messages/read` → mark read
+- `POST /v1/identify` → attach user profile to device/conversation
+- `POST /v1/events/track` → track analytics event (SDK use)
 - `GET /health` → health check + websocket connection count
 - `GET /admin`, `/admin/api/...` → admin UI + data
 - `GET /setup`, `/setup/api/...` → setup UI + app creation
@@ -49,6 +51,9 @@ This document explains how the backend works, current limits, and what’s requi
 **Header validation**
 All `/v1` routes (except websocket upgrades) require:
 - `X-App-Id`, `X-Device-Id`, `X-Api-Key`, optional `X-SDK-Version`.
+
+**Device context**
+`device_context.platform` supports: `ios`, `android`, `web`, `desktop`.
 
 ---
 

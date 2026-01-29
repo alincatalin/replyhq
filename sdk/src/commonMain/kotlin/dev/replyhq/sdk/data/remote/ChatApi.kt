@@ -130,6 +130,23 @@ class ChatApi(
         logDebug("GET ${response.request.url} -> ${response.status.value}")
         handleResponse(response)
     }
+
+    suspend fun syncMessages(
+        conversationId: String,
+        afterSequence: Long = 0,
+        limit: Int = 50
+    ): Result<SyncMessagesResponse> = runCatching {
+        val response: HttpResponse = client.get {
+            url {
+                takeFrom(normalizedBaseUrl)
+                appendPathSegments("conversations", conversationId, "sync")
+                parameters.append("after_sequence", afterSequence.toString())
+                parameters.append("limit", limit.toString())
+            }
+        }
+        logDebug("GET ${response.request.url} -> ${response.status.value}")
+        handleResponse(response)
+    }
     
     suspend fun registerPushToken(
         token: String,
@@ -144,6 +161,80 @@ class ChatApi(
         }
         logDebug("POST ${response.request.url} -> ${response.status.value}")
         handleResponse<RegisterPushTokenResponse>(response).success
+    }
+
+    suspend fun identifyUser(user: ChatUser): Result<Boolean> = runCatching {
+        val response: HttpResponse = client.post {
+            url {
+                takeFrom(normalizedBaseUrl)
+                appendPathSegments("identify")
+            }
+            setBody(IdentifyRequest(user))
+        }
+        logDebug("POST ${response.request.url} -> ${response.status.value}")
+        handleResponse<IdentifyResponse>(response).success
+    }
+
+    suspend fun trackEvent(
+        userId: String,
+        eventName: String,
+        properties: Map<String, String>? = null,
+        userPlan: String? = null,
+        userCountry: String? = null,
+        sessionId: String? = null,
+        platform: String? = null,
+        appVersion: String? = null
+    ): Result<Boolean> = runCatching {
+        val response: HttpResponse = client.post {
+            url {
+                takeFrom(normalizedBaseUrl)
+                appendPathSegments("events", "track")
+            }
+            setBody(
+                TrackEventRequest(
+                    userId = userId,
+                    eventName = eventName,
+                    properties = properties,
+                    userPlan = userPlan,
+                    userCountry = userCountry,
+                    sessionId = sessionId,
+                    platform = platform,
+                    appVersion = appVersion
+                )
+            )
+        }
+        logDebug("POST ${response.request.url} -> ${response.status.value}")
+        handleResponse<TrackEventResponse>(response).success
+    }
+
+    suspend fun markDelivered(
+        conversationId: String,
+        messageIds: List<String>
+    ): Result<Boolean> = runCatching {
+        val response: HttpResponse = client.post {
+            url {
+                takeFrom(normalizedBaseUrl)
+                appendPathSegments("conversations", conversationId, "messages", "delivered")
+            }
+            setBody(MarkDeliveredRequest(messageIds))
+        }
+        logDebug("POST ${response.request.url} -> ${response.status.value}")
+        handleResponse<MessageStatusUpdateResponse>(response).updates.isNotEmpty()
+    }
+
+    suspend fun markRead(
+        conversationId: String,
+        upToMessageId: String? = null
+    ): Result<Boolean> = runCatching {
+        val response: HttpResponse = client.post {
+            url {
+                takeFrom(normalizedBaseUrl)
+                appendPathSegments("conversations", conversationId, "messages", "read")
+            }
+            setBody(MarkReadRequest(upToMessageId))
+        }
+        logDebug("POST ${response.request.url} -> ${response.status.value}")
+        handleResponse<MessageStatusUpdateResponse>(response).updates.isNotEmpty()
     }
     
     private suspend inline fun <reified T> handleResponse(response: HttpResponse): T {

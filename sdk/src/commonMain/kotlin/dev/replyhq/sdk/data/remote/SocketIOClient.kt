@@ -25,6 +25,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
@@ -34,8 +36,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Socket.IO client implementation for Kotlin Multiplatform
@@ -68,8 +68,9 @@ class SocketIOClient(
 
     private val outgoing = Channel<String>(capacity = 64)
 
-    private val ackCounter = AtomicInteger(0)
-    private val pendingAcks = ConcurrentHashMap<Int, CompletableDeferred<JsonObject?>>()
+    private val ackMutex = Mutex()
+    private var ackCounter = 0
+    private val pendingAcks = mutableMapOf<Int, CompletableDeferred<JsonObject?>>()
 
     /**
      * Connect to the Socket.IO server
@@ -317,9 +318,11 @@ class SocketIOClient(
     /**
      * Handle acknowledgement packet
      */
-    private fun handleAck(packet: SocketIOPacket) {
+    private suspend fun handleAck(packet: SocketIOPacket) {
         val ackId = packet.ackId ?: return
-        val deferred = pendingAcks.remove(ackId) ?: return
+        val deferred = ackMutex.withLock {
+            pendingAcks.remove(ackId)
+        } ?: return
 
         try {
             val responseData = (packet.data as? JsonObject)
@@ -339,9 +342,12 @@ class SocketIOClient(
         namespace: String = "/client"
     ): Result<JsonObject?> {
         return try {
-            val ackId = ackCounter.incrementAndGet()
             val deferred = CompletableDeferred<JsonObject?>()
-            pendingAcks[ackId] = deferred
+            val ackId = ackMutex.withLock {
+                ackCounter += 1
+                pendingAcks[ackCounter] = deferred
+                ackCounter
+            }
 
             val packet = SocketIOParser.encodeEvent(namespace, event, data, ackId)
             outgoing.send(packet)

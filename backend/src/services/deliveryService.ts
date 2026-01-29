@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { isPresent } from './presenceService.js';
+import { isOnline } from './presenceService.js';
 import { sendPushNotificationToUser, PushNotificationPayload } from './pushNotificationService.js';
 
 export interface NotificationDecision {
@@ -27,7 +27,14 @@ export async function shouldSendNotification(
   messageId: string
 ): Promise<NotificationDecision> {
   // Check if user is online (has active presence)
-  const isUserOnline = await isPresent(appId, userId);
+  const devices = await prisma.device.findMany({
+    where: { appId, userId },
+    select: { deviceId: true },
+  });
+
+  const isUserOnline = await Promise.all(
+    devices.map((device) => isOnline(appId, device.deviceId))
+  ).then((results) => results.some(Boolean));
 
   if (isUserOnline) {
     return {
