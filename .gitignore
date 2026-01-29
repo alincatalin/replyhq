@@ -17,3 +17,8 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+backend/dist/
+backend/node_modules/
+backend/.env
+*.js.map
+*.d.ts.map
