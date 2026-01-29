@@ -6,7 +6,12 @@ plugins {
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    `maven-publish`
+    signing
 }
+
+group = "dev.replyhq"
+version = System.getenv("SDK_VERSION") ?: "0.1.0"
 
 sqldelight {
     databases {
@@ -133,4 +138,53 @@ kotlin {
         }
     }
 
+}
+
+publishing {
+    repositories {
+        maven {
+            val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
+            credentials {
+                username = System.getenv("OSSRH_USERNAME")
+                password = System.getenv("OSSRH_PASSWORD")
+            }
+        }
+    }
+
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set("ReplyHQ SDK")
+            description.set("Kotlin Multiplatform SDK for ReplyHQ chat.")
+            url.set("https://github.com/alincatalin/replyhq")
+            licenses {
+                license {
+                    name.set("MIT License")
+                    url.set("https://opensource.org/licenses/MIT")
+                }
+            }
+            scm {
+                url.set("https://github.com/alincatalin/replyhq")
+                connection.set("scm:git:https://github.com/alincatalin/replyhq.git")
+                developerConnection.set("scm:git:git@github.com:alincatalin/replyhq.git")
+            }
+            developers {
+                developer {
+                    id.set("alincatalin")
+                    name.set("alin catalin")
+                    url.set("https://github.com/alincatalin")
+                }
+            }
+        }
+    }
+}
+
+signing {
+    val signingKey = System.getenv("SIGNING_KEY")
+    val signingPassword = System.getenv("SIGNING_PASSWORD")
+    if (!signingKey.isNullOrBlank() && !signingPassword.isNullOrBlank()) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications)
+    }
 }

@@ -1,0 +1,32 @@
+name: Publish SDK
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "SDK version to publish (e.g., 0.1.0)"
+        required: true
+
+jobs:
+  publish:
+    runs-on: macos-latest
+    env:
+      SDK_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+      OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+      OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Publish to Maven Central (Sonatype)
+        run: ./gradlew :sdk:publishAllPublicationsToMavenRepository closeAndReleaseSonatypeStagingRepository --no-daemon
