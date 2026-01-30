@@ -161,9 +161,9 @@ ReplyHQChatSDK.setUser(
 
 ✅ Check your dashboard - you should see the message appear!
 
-- [View full iOS documentation](https://docs.replyhq.dev/sdk/ios)
+- [View full iOS documentation](https://docs.replyhq.xyz/sdk/ios)
 - [See example iOS app](https://github.com/replyhq/examples/tree/main/ios)
-- [Configure push notifications](https://docs.replyhq.dev/sdk/ios/push-notifications)
+- [Configure push notifications](https://docs.replyhq.xyz/sdk/ios/push-notifications)
 `;
 
     case 'android':
@@ -250,9 +250,9 @@ lifecycleScope.launch {
 
 ✅ Check your dashboard - you should see the message appear!
 
-- [View full Android documentation](https://docs.replyhq.dev/sdk/android)
+- [View full Android documentation](https://docs.replyhq.xyz/sdk/android)
 - [See example Android app](https://github.com/replyhq/examples/tree/main/android)
-- [Configure push notifications](https://docs.replyhq.dev/sdk/android/push-notifications)
+- [Configure push notifications](https://docs.replyhq.xyz/sdk/android/push-notifications)
 `;
 
     case 'react-native':
@@ -340,9 +340,9 @@ ReplyHQ.identify('user_123', {
 
 ✅ Check your dashboard - you should see the message appear!
 
-- [View full React Native documentation](https://docs.replyhq.dev/sdk/react-native)
+- [View full React Native documentation](https://docs.replyhq.xyz/sdk/react-native)
 - [See example React Native app](https://github.com/replyhq/examples/tree/main/react-native)
-- [Configure push notifications](https://docs.replyhq.dev/sdk/react-native/push-notifications)
+- [Configure push notifications](https://docs.replyhq.xyz/sdk/react-native/push-notifications)
 `;
 
     case 'flutter':
@@ -426,9 +426,9 @@ await ReplyHQ.identify(
 
 ✅ Check your dashboard - you should see the message appear!
 
-- [View full Flutter documentation](https://docs.replyhq.dev/sdk/flutter)
+- [View full Flutter documentation](https://docs.replyhq.xyz/sdk/flutter)
 - [See example Flutter app](https://github.com/replyhq/examples/tree/main/flutter)
-- [Configure push notifications](https://docs.replyhq.dev/sdk/flutter/push-notifications)
+- [Configure push notifications](https://docs.replyhq.xyz/sdk/flutter/push-notifications)
 `;
 
     default:
