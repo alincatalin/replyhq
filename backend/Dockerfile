@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -29,6 +29,6 @@ COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD node -e "require('http').get('http://localhost:3000/health',res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
 CMD ["node", "dist/index.js"]
