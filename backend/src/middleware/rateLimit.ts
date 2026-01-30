@@ -95,7 +95,15 @@ function getRedisClient() {
     return redisClient;
   }
 
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  const rawRedisUrl = process.env.REDIS_URL;
+  if (rawRedisUrl !== undefined) {
+    const trimmed = rawRedisUrl.trim().toLowerCase();
+    if (trimmed === '' || trimmed === 'disabled' || trimmed === 'false') {
+      return null;
+    }
+  }
+
+  const redisUrl = rawRedisUrl || 'redis://localhost:6379';
 
   redisClient = createClient({
     url: redisUrl,
@@ -132,10 +140,13 @@ function getRedisClient() {
 function createRateLimitStore(prefix: string) {
   try {
     const client = getRedisClient();
+    if (!client) {
+      return undefined;
+    }
 
     return new RedisStore({
       // @ts-expect-error - rate-limit-redis types don't match latest redis client
-      client,
+      sendCommand: (...args: any[]) => client.sendCommand(args as any),
       prefix: `rl:${prefix}:`,
     });
   } catch (error) {
