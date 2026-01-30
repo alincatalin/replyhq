@@ -1,7 +1,7 @@
 export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  baseUrl: process.env.BASE_URL || 'https://api.replyhq.dev',
+  baseUrl: process.env.BASE_URL || 'https://replyhq.xyz/api',
   
   database: {
     url: process.env.DATABASE_URL || 'postgresql://localhost:5432/replyhq',

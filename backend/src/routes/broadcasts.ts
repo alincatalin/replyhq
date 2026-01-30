@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction, type IRouter } from 'express';
+import { TargetType } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { requireJWT } from '../middleware/jwt.js';
 import { requirePermission, Permission } from '../middleware/permissions.js';
@@ -110,6 +111,15 @@ router.post('/', requireJWT, requirePermission(Permission.CREATE_BROADCASTS), as
     }
 
     const normalizedTarget = String(targetType).toUpperCase();
+    const allowedTargets = new Set<string>(Object.values(TargetType));
+
+    if (!allowedTargets.has(normalizedTarget)) {
+      return res.status(400).json({
+        error: 'Invalid target type',
+        code: 'INVALID_TARGET_TYPE',
+      });
+    }
+    const targetTypeEnum = normalizedTarget as TargetType;
 
     if (normalizedTarget === 'SEGMENT' && !segmentQuery) {
       return res.status(400).json({
@@ -134,7 +144,7 @@ router.post('/', requireJWT, requirePermission(Permission.CREATE_BROADCASTS), as
         title,
         body,
         data: data ?? undefined,
-        targetType: normalizedTarget,
+        targetType: targetTypeEnum,
         segmentQuery: segmentQuery ?? undefined,
         userIds: Array.isArray(userIds) ? userIds : [],
         status,
@@ -220,7 +230,18 @@ router.put('/:id', requireJWT, requirePermission(Permission.EDIT_BROADCASTS), as
       });
     }
 
-    const normalizedTarget = targetType ? String(targetType).toUpperCase() : undefined;
+    const allowedTargets = new Set<string>(Object.values(TargetType));
+    let normalizedTarget: TargetType | undefined;
+    if (targetType) {
+      const candidate = String(targetType).toUpperCase();
+      if (!allowedTargets.has(candidate)) {
+        return res.status(400).json({
+          error: 'Invalid target type',
+          code: 'INVALID_TARGET_TYPE',
+        });
+      }
+      normalizedTarget = candidate as TargetType;
+    }
     const scheduled = scheduledAt ? new Date(scheduledAt) : null;
 
     const updated = await prisma.broadcast.update({

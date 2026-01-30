@@ -28,8 +28,8 @@ export async function initRedis(): Promise<void> {
   publisher = createClient({ url: redisUrl });
   subscriber = createClient({ url: redisUrl });
 
-  publisher.on('error', (err) => console.error('Redis Publisher Error:', err));
-  subscriber.on('error', (err) => console.error('Redis Subscriber Error:', err));
+  publisher.on('error', (err: unknown) => console.error('Redis Publisher Error:', err));
+  subscriber.on('error', (err: unknown) => console.error('Redis Subscriber Error:', err));
 
   await publisher.connect();
   await subscriber.connect();

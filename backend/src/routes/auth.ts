@@ -49,6 +49,7 @@ router.post('/signup', strictRateLimit, async (req: Request, res: Response, next
     const app = await prisma.app.create({
       data: {
         name: appName?.trim() || 'ReplyHQ App',
+        apiKey,
         apiKeyHash,
       },
       select: { id: true, name: true },

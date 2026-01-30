@@ -154,6 +154,52 @@
             width: 100%;
         }
 
+        .setup-step {
+            display: none;
+        }
+
+        .setup-step.active {
+            display: block;
+        }
+
+        .platform-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .platform-switch-label {
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .platform-switch-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .platform-pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .platform-pill.active {
+            background: rgba(220, 38, 38, 0.1);
+            border-color: rgba(220, 38, 38, 0.4);
+            color: var(--primary);
+        }
+
         /* Progress Steps */
         .progress-steps {
             display: flex;
@@ -383,6 +429,45 @@
             font-size: 0.9rem;
         }
 
+        .credential-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .credential-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .inline-note {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .step-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 720px) {
+            .credential-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .step-actions {
+                flex-direction: column;
+            }
+        }
+
         .form-input {
             width: 100%;
             background: var(--bg);
@@ -403,6 +488,102 @@
             font-size: 0.85rem;
             color: var(--text-dim);
             margin-top: 0.5rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(9, 9, 11, 0.75);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1200;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 520px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.25rem;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .modal-warning {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .modal-status {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .modal-status.error {
+            color: #fca5a5;
+        }
+
+        .modal-key {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .modal-key code {
+            font-size: 0.9rem;
+            word-break: break-all;
+            color: var(--text);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .is-hidden {
+            display: none !important;
         }
 
         /* Checklist */
@@ -593,249 +774,137 @@
 
             <div class="content">
                 <div class="setup-container">
-                    <!-- Progress Steps -->
-                    <div class="progress-steps">
+                    <div class="progress-steps" id="progress-steps">
                         <div class="progress-line">
-                            <div class="progress-line-fill" style="width: 100%;"></div>
+                            <div class="progress-line-fill" id="progress-line-fill"></div>
                         </div>
-                        <div class="step completed">
+                        <div class="step" data-step="1">
                             <div class="step-number">1</div>
                             <div class="step-label">Platform</div>
                         </div>
-                        <div class="step completed">
+                        <div class="step" data-step="2">
                             <div class="step-number">2</div>
                             <div class="step-label">Install SDK</div>
                         </div>
-                        <div class="step completed">
+                        <div class="step" data-step="3">
                             <div class="step-number">3</div>
                             <div class="step-label">Configure</div>
                         </div>
-                        <div class="step completed">
+                        <div class="step" data-step="4">
                             <div class="step-number">4</div>
                             <div class="step-label">Verify</div>
                         </div>
-                        <div class="step active">
-                            <div class="step-number">5</div>
-                            <div class="step-label">Features</div>
+                    </div>
+
+                    <div class="platform-switch">
+                        <span class="platform-switch-label">Platform</span>
+                        <div class="platform-switch-buttons">
+                            <button class="platform-pill" data-platform="ios" type="button">iOS</button>
+                            <button class="platform-pill" data-platform="android" type="button">Android</button>
                         </div>
                     </div>
 
-                    <!-- Features Section (Step 5) -->
-                    <div class="setup-card">
+                    <div class="setup-card setup-step" data-step="1">
                         <div class="card-header">
-                            <h2 class="card-title">SDK Capabilities</h2>
-                            <p class="card-description">See what you can do with ReplyHQ installed</p>
+                            <h2 class="card-title">Choose your platform</h2>
+                            <p class="card-description">Pick the platform you want to integrate first.</p>
                         </div>
 
-                        <div style="display: grid; gap: 2rem;">
-                            <!-- Feature 1 -->
-                            <div
-                                style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; gap: 1.5rem; align-items: start;">
-                                <div
-                                    style="background: rgba(220, 38, 38, 0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--primary);">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                        <path
-                                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">Context
-                                        Awareness</h3>
-                                    <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem;">
-                                        Every message includes device logs, breadcrumbs, and user metadata
-                                        automatically.
-                                    </p>
-                                    <div class="code-block" style="margin: 0; padding: 1rem; font-size: 0.75rem;">
-                                        <span class="syntax-k">let</span> context = {<br>
-                                        &nbsp;&nbsp;<span class="syntax-s">"device"</span>: <span
-                                            class="syntax-s">"Pixel 7"</span>,<br>
-                                        &nbsp;&nbsp;<span class="syntax-s">"battery"</span>: <span
-                                            class="syntax-s">"14%"</span>,<br>
-                                        &nbsp;&nbsp;<span class="syntax-s">"last_view"</span>: <span
-                                            class="syntax-s">"Checkout_Screen"</span><br>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Feature 2 -->
-                            <div
-                                style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; gap: 1.5rem; align-items: start;">
-                                <div
-                                    style="background: rgba(34, 197, 94, 0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--success);">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">The Loop
-                                        (Push Fallback)</h3>
-                                    <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem;">
-                                        If users leave the app, your reply becomes a Push Notification.
-                                    </p>
-                                    <div
-                                        style="background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333; font-size: 0.8rem; color: #fff; display: flex; align-items: center; gap: 10px;">
-                                        <div
-                                            style="width: 20px; height: 20px; background: var(--primary); border-radius: 4px;">
-                                        </div>
-                                        <div>
-                                            <div style="font-weight: bold; font-size: 0.7rem;">ReplyHQ • Now</div>
-                                            <div>Agent sent you a message: "We fixed..."</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Feature 3 -->
-                            <div
-                                style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; gap: 1.5rem; align-items: start;">
-                                <div
-                                    style="background: rgba(234, 179, 8, 0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--warning);">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                        <path
-                                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">Broadcasts &
-                                        Outbound</h3>
-                                    <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem;">
-                                        Send changelogs and announcements directly to users.
-                                    </p>
-                                    <a href="broadcasts.html" class="btn btn-outline"
-                                        style="padding: 0.5rem 1rem; font-size: 0.8rem;">Try Broadcasts →</a>
-                                </div>
-                            </div>
+                        <div class="platform-grid">
+                            <button class="platform-option" data-platform="ios" type="button">
+                                <div class="platform-icon">🍎</div>
+                                <div class="platform-name">iOS</div>
+                                <div class="platform-desc">Swift / SwiftUI</div>
+                            </button>
+                            <button class="platform-option" data-platform="android" type="button">
+                                <div class="platform-icon">🤖</div>
+                                <div class="platform-name">Android</div>
+                                <div class="platform-desc">Kotlin / Jetpack</div>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Step 3: Configure -->
-                    <div class="setup-card">
+                    <div class="setup-card setup-step" data-step="2">
                         <div class="card-header">
-                            <h2 class="card-title">Configure Your SDK</h2>
-                            <p class="card-description">Add your API key and customize the SDK behavior</p>
+                            <h2 class="card-title">Install the SDK</h2>
+                            <p class="card-description">Add ReplyHQ to your <span id="install-platform-label">iOS</span> app.</p>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Your API Key</label>
-                            <input type="text" class="form-input mono" value="rhq_live_xK7mP9nQ8wE2rT5vY4uH3sL6gF1dA0"
-                                readonly>
-                            <p class="form-hint">Keep this secret! Don't commit it to version control.</p>
-                        </div>
+                        <div id="install-code"></div>
 
-                        <div class="code-block">
-                            <div class="code-header">
-                                <span class="code-lang">Swift (iOS)</span>
-                                <button class="copy-btn">Copy</button>
-                            </div>
-                            <div class="code-content">
-                                <span class="syntax-c">// AppDelegate.swift</span><br>
-                                <span class="syntax-k">import</span> ReplyHQ<br><br>
-                                <span class="syntax-k">func</span> <span class="syntax-f">application</span>(_
-                                application: <span class="syntax-v">UIApplication</span>,
-                                didFinishLaunchingWithOptions...) {<br>
-                                &nbsp;&nbsp;<span class="syntax-c">// Initialize ReplyHQ</span><br>
-                                &nbsp;&nbsp;<span class="syntax-v">ReplyHQ</span>.<span
-                                    class="syntax-f">configure</span>(<br>
-                                &nbsp;&nbsp;&nbsp;&nbsp;apiKey: <span
-                                    class="syntax-s">"rhq_live_xK7mP9nQ8wE2rT5vY4uH3sL6gF1dA0"</span>,<br>
-                                &nbsp;&nbsp;&nbsp;&nbsp;userId: <span class="syntax-s">"user_12345"</span><br>
-                                &nbsp;&nbsp;)<br>
-                                &nbsp;&nbsp;<br>
-                                &nbsp;&nbsp;<span class="syntax-c">// Enable shake-to-feedback (optional)</span><br>
-                                &nbsp;&nbsp;<span class="syntax-v">ReplyHQ</span>.enableShakeGesture = <span
-                                    class="syntax-k">true</span><br>
-                                }
-                            </div>
-                        </div>
-
-                        <div
-                            style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
-                            <div style="display: flex; gap: 0.75rem; align-items: start;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"
-                                    style="flex-shrink: 0; margin-top: 2px;">
-                                    <path
-                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                                </svg>
-                                <div>
-                                    <strong style="color: #22c55e;">Pro Tip:</strong>
-                                    <div style="color: var(--text-dim); font-size: 0.9rem; margin-top: 0.25rem;">
-                                        Set the user ID to match your internal user identifier. This lets you correlate
-                                        ReplyHQ messages with your analytics.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Optional: Customize
-                            Appearance</h3>
-
-                        <div class="form-group">
-                            <label class="form-label">Primary Color</label>
-                            <div style="display: flex; gap: 1rem; align-items: center;">
-                                <input type="color" value="#DC2626"
-                                    style="width: 60px; height: 40px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer;">
-                                <input type="text" class="form-input mono" value="#DC2626" style="flex: 1;">
-                            </div>
-                            <p class="form-hint">This color will be used for buttons and UI accents in the SDK.</p>
-                        </div>
-
-                        <div class="actions">
-                            <button class="btn btn-outline">← Previous</button>
-                            <button class="btn btn-primary">Continue to Verification →</button>
-                        </div>
+                        <div class="inline-note" id="install-note"></div>
                     </div>
 
-                    <!-- Alternative: Step 4 Preview -->
-                    <div class="setup-card" style="border: 2px dashed var(--border); background: transparent;">
+                    <div class="setup-card setup-step" data-step="3">
                         <div class="card-header">
-                            <h2 class="card-title">What's Next: Verification</h2>
-                            <p class="card-description">You'll complete these final checks to go live</p>
+                            <h2 class="card-title">Configure ReplyHQ</h2>
+                            <p class="card-description">Use your real App ID and API key to initialize the SDK.</p>
                         </div>
 
-                        <ul class="checklist">
-                            <li class="checklist-item completed">
-                                <div class="checkbox">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                    </svg>
+                        <div class="credential-grid">
+                            <div class="form-group">
+                                <label class="form-label">App ID</label>
+                                <div class="credential-row">
+                                    <input id="app-id-input" type="text" class="form-input mono" readonly>
+                                    <button class="copy-btn" data-copy-target="app-id-input">Copy</button>
                                 </div>
-                                <div class="checklist-content">
-                                    <div class="checklist-title">SDK Installation Detected</div>
-                                    <div class="checklist-desc">We've received a connection from your app</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">API Key</label>
+                                <div class="credential-row">
+                                    <input id="api-key-input" type="text" class="form-input mono" readonly>
+                                    <button class="copy-btn" data-copy-target="api-key-input">Copy</button>
+                                    <button class="copy-btn" id="api-key-regenerate" type="button" data-skip-copy="true">Generate new</button>
                                 </div>
-                            </li>
-                            <li class="checklist-item completed">
-                                <div class="checkbox">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                    </svg>
-                                </div>
-                                <div class="checklist-content">
-                                    <div class="checklist-title">User Identification Working</div>
-                                    <div class="checklist-desc">Your user ID is being captured correctly</div>
-                                </div>
-                            </li>
-                            <li class="checklist-item">
-                                <div class="checkbox"></div>
-                                <div class="checklist-content">
-                                    <div class="checklist-title">Send a Test Message</div>
-                                    <div class="checklist-desc">Open the chat widget in your app and send us a message
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="checklist-item">
-                                <div class="checkbox"></div>
-                                <div class="checklist-content">
-                                    <div class="checklist-title">Test Shake-to-Feedback (Optional)</div>
-                                    <div class="checklist-desc">Shake your device to trigger the feedback flow</div>
-                                </div>
-                            </li>
-                        </ul>
+                                <p class="form-hint" id="api-key-note"></p>
+                            </div>
+                        </div>
+
+                        <div id="configure-code"></div>
                     </div>
-                </div>
+
+                    <div class="setup-card setup-step" data-step="4">
+                        <div class="card-header">
+                            <h2 class="card-title">Verify integration</h2>
+                            <p class="card-description">Identify a user and open the chat to send a test message.</p>
+                        </div>
+
+                        <div id="verify-code-primary"></div>
+                        <div id="verify-code-secondary"></div>
+
+                        <div class="inline-note" id="verify-note"></div>
+                    </div>
+
+                    <div class="step-actions">
+                        <button class="btn btn-outline" id="prev-step">← Previous</button>
+                        <button class="btn btn-primary" id="next-step">Next →</button>
+                    </div>
+                </div></div>
             </div>
         </main>
+    </div>
+
+    <div class="modal-overlay" id="api-key-modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
+            <div class="modal-header">
+                <div class="modal-title" id="api-key-modal-title">Save your new API key</div>
+                <button class="modal-close" type="button" id="close-api-key-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-warning">
+                    This is the only time you'll see the full API key. Store it securely, never share it, and do not commit it
+                    to source control. If it is lost or compromised, generate a new one.
+                </p>
+                <p class="modal-status is-hidden" id="api-key-modal-status"></p>
+                <div class="modal-key">
+                    <code class="mono" id="api-key-full"></code>
+                    <button class="copy-btn" type="button" id="copy-api-key-full" data-skip-copy="true">Copy</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" type="button" id="ack-api-key-modal">I saved it</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     
@@ -852,7 +921,7 @@
     <script src="/admin/js/page-auth.js"></script>
 
     <!-- Page-specific onboarding functionality -->
-    <script src="/admin/js/onboarding.js"></script>
+    <script src="/admin/js/onboarding.js?v=20260129-1"></script>
 
 </body>
 

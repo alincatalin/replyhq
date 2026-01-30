@@ -29,7 +29,7 @@ router.get(
 
       const app = await prisma.app.findUnique({
         where: { id: appId },
-        select: { id: true, name: true, apiKeyHash: true },
+        select: { id: true, name: true, apiKey: true },
       });
 
       if (!app) {
@@ -39,17 +39,15 @@ router.get(
         });
       }
 
-      // Generate masked API key for display (show first 8 chars + "...")
-      // Note: In production, you'd need to decrypt or regenerate the actual API key
-      // For now, we'll use a placeholder
-      const maskedApiKey = 'rq_live_xxxxxxxxxxxxxxxx';
-      const actualApiKey = 'rq_live_xxxxxxxxxxxxxxxx'; // TODO: Get actual API key
+      const actualApiKey = app.apiKey || null;
+      const maskedApiKey = actualApiKey ? maskApiKey(actualApiKey) : 'rq_live_************************';
 
       const config = {
         apiKey: actualApiKey,
         maskedApiKey,
         appId: app.id,
         appName: app.name,
+        apiKeyAvailable: Boolean(actualApiKey),
       };
 
       const markdown = generateQuickstartMarkdown(platform, config);
@@ -63,6 +61,8 @@ router.get(
           appId: app.id,
           appName: app.name,
           maskedApiKey,
+          apiKey: actualApiKey,
+          apiKeyAvailable: Boolean(actualApiKey),
         },
       });
     } catch (error) {
@@ -75,6 +75,8 @@ router.get(
  * Generate platform-specific quickstart markdown
  */
 function generateQuickstartMarkdown(platform: string, config: any): string {
+  const apiKey = config.apiKey || config.maskedApiKey;
+  const appId = config.appId;
   switch (platform) {
     case 'ios':
       return `# iOS Quickstart (5 minutes)
@@ -106,7 +108,7 @@ In your \`AppDelegate.swift\`:
 
 \`\`\`swift
 import UIKit
-import ReplyHQSDK
+import sdkKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -115,10 +117,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         // Initialize ReplyHQ
-        ReplyHQ.initialize(
-            apiKey: "${config.apiKey}",
-            appId: "${config.appId}"
-        )
+        ReplyHQChatSDK.initialize(appId: "${appId}", apiKey: "${apiKey}")
 
         return true
     }
@@ -128,18 +127,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 ## 3. Send your first message
 
 \`\`\`swift
-import ReplyHQSDK
+import SwiftUI
+import sdkKit
 
-// Send a test message
-ReplyHQ.shared.sendMessage(
-    conversationId: "support",
-    text: "Hello from iOS! 👋"
-) { result in
-    switch result {
-    case .success(let message):
-        print("Message sent: \\(message.id)")
-    case .failure(let error):
-        print("Error: \\(error)")
+struct SupportView: View {
+    @State private var showChat = false
+
+    var body: some View {
+        Button("Open ReplyHQ") { showChat = true }
+            .sheet(isPresented: $showChat) {
+                ReplyHQChatView(isPresented: $showChat)
+            }
     }
 }
 \`\`\`
@@ -147,14 +145,16 @@ ReplyHQ.shared.sendMessage(
 ## 4. Identify users (optional)
 
 \`\`\`swift
-ReplyHQ.shared.identify(
-    userId: "user_123",
-    traits: [
-        "name": "Jane Doe",
-        "email": "jane@example.com",
-        "plan": "pro"
-    ]
-)
+ReplyHQChatSDK.setUser(
+    id: "user_123",
+    name: "Jane Doe",
+    email: "jane@example.com",
+    attributes: ["plan": "pro"]
+) { conversation, error in
+    if let error = error {
+        print("Error: \\(error)")
+    }
+}
 \`\`\`
 
 ## Next steps
@@ -182,7 +182,7 @@ In your app's \`build.gradle\`:
 
 \`\`\`gradle
 dependencies {
-    implementation 'com.replyhq:sdk-android:1.0.0'
+    implementation("dev.replyhq:sdk:0.1.0")
 }
 \`\`\`
 
@@ -192,20 +192,18 @@ In your \`Application\` class:
 
 \`\`\`kotlin
 import android.app.Application
-import com.replyhq.sdk.ReplyHQ
-import com.replyhq.sdk.ReplyHQConfig
+import dev.replyhq.sdk.ChatSDK
 
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
         // Initialize ReplyHQ
-        val config = ReplyHQConfig.Builder()
-            .apiKey("${config.apiKey}")
-            .appId("${config.appId}")
-            .build()
-
-        ReplyHQ.initialize(this, config)
+        ChatSDK.init(
+            context = this,
+            appId = "${appId}",
+            apiKey = "${apiKey}"
+        )
     }
 }
 \`\`\`
@@ -221,32 +219,31 @@ Don't forget to register your Application class in \`AndroidManifest.xml\`:
 ## 3. Send your first message
 
 \`\`\`kotlin
-import com.replyhq.sdk.ReplyHQ
+import androidx.lifecycle.lifecycleScope
+import dev.replyhq.sdk.ChatSDK
 
 // Send a test message
-ReplyHQ.getInstance().sendMessage(
-    conversationId = "support",
-    text = "Hello from Android! 🤖"
-) { result ->
-    result.onSuccess { message ->
-        println("Message sent: \${message.id}")
-    }.onFailure { error ->
-        println("Error: \${error.message}")
-    }
+lifecycleScope.launch {
+    ChatSDK.sendMessage("Hello from Android! 🤖")
 }
 \`\`\`
 
 ## 4. Identify users (optional)
 
 \`\`\`kotlin
-ReplyHQ.getInstance().identify(
-    userId = "user_123",
-    traits = mapOf(
-        "name" to "John Doe",
-        "email" to "john@example.com",
-        "plan" to "pro"
+import dev.replyhq.sdk.ChatSDK
+import dev.replyhq.sdk.config.ChatUser
+
+lifecycleScope.launch {
+    ChatSDK.setUser(
+        ChatUser(
+            id = "user_123",
+            name = "John Doe",
+            email = "john@example.com",
+            attributes = mapOf("plan" to "pro")
+        )
     )
-)
+}
 \`\`\`
 
 ## Next steps
@@ -455,6 +452,15 @@ function extractCodeSnippets(markdown: string): Array<{ language: string; code: 
   }
 
   return snippets;
+}
+
+function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 8) {
+    return `${apiKey.slice(0, 2)}****`;
+  }
+  const prefix = apiKey.slice(0, 6);
+  const suffix = apiKey.slice(-4);
+  return `${prefix}****${suffix}`;
 }
 
 export default router;

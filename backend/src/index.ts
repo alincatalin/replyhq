@@ -1,4 +1,5 @@
 import 'dotenv/config';
+console.log('[Startup] index.ts loaded');
 import { createServer } from 'http';
 import type { Socket } from 'net';
 import app from './app.js';
@@ -19,7 +20,13 @@ import { startWorkflowScheduler, stopWorkflowScheduler } from './services/workfl
 let isShuttingDown = false;
 
 async function main() {
-  await connectDatabase();
+  console.log('[Startup] Beginning initialization');
+  console.log('[Startup] Connecting database...');
+  await Promise.race([
+    connectDatabase(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Database connect timeout after 5s')), 5000)),
+  ]);
+  console.log('[Startup] Database connected');
   
   try {
     await initRedis();
@@ -103,6 +110,14 @@ async function main() {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[Startup] Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Startup] Uncaught exception:', error);
+});
 
 main().catch((error) => {
   console.error('Failed to start server:', error);

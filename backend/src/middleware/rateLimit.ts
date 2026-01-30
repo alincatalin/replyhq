@@ -110,7 +110,7 @@ function getRedisClient() {
     },
   });
 
-  redisClient.on('error', (error) => {
+  redisClient.on('error', (error: unknown) => {
     console.error('Redis client error:', error);
   });
 
@@ -118,7 +118,7 @@ function getRedisClient() {
     console.log('Redis client connected for rate limiting');
   });
 
-  redisClient.connect().catch((error) => {
+  redisClient.connect().catch((error: unknown) => {
     console.error('Failed to connect to Redis for rate limiting:', error);
     console.warn('Rate limiting will fail-open (allow requests)');
   });

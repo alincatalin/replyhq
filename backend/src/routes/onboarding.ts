@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction, type IRouter } from 'express'
 import { prisma } from '../lib/prisma.js';
 import { requireJWT } from '../middleware/jwt.js';
 import { requirePermission, Permission } from '../middleware/permissions.js';
+import { generateApiKey, hashApiKey } from '../lib/apiKey.js';
 
 const router: IRouter = express.Router();
 
@@ -205,6 +206,38 @@ router.get(
 );
 
 /**
+ * POST /admin/onboarding/api-key/rotate
+ * Generate a new API key for the current app
+ */
+router.post(
+  '/api-key/rotate',
+  requireJWT,
+  requirePermission(Permission.MANAGE_SETTINGS),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { appId } = req.jwtPayload!;
+
+      const apiKey = generateApiKey();
+      const apiKeyHash = hashApiKey(apiKey);
+
+      const app = await prisma.app.update({
+        where: { id: appId },
+        data: { apiKey, apiKeyHash },
+        select: { apiKey: true },
+      });
+
+      return res.json({
+        apiKey,
+        maskedApiKey: maskApiKey(apiKey),
+        apiKeyAvailable: true,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
  * Helper: Get checklist items based on onboarding state
  */
 function getChecklistItems(state: any) {
@@ -255,6 +288,15 @@ function getChecklistItems(state: any) {
  */
 function getDefaultChecklist(platform: string | null) {
   return getChecklistItems({ platform, sdkInstalled: false, firstMessageSent: false, userIdentified: false, teamInvited: false });
+}
+
+function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 8) {
+    return `${apiKey.slice(0, 2)}****`;
+  }
+  const prefix = apiKey.slice(0, 6);
+  const suffix = apiKey.slice(-4);
+  return `${prefix}...${suffix}`;
 }
 
 /**

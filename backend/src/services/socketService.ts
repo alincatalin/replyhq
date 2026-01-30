@@ -746,7 +746,7 @@ async function getActiveSessions(appId: string): Promise<SessionData[]> {
     // This reduces latency from O(n) network calls to O(1)
     const pipeline = redis.client.multi();
 
-    connectionIds.forEach((connectionId) => {
+    connectionIds.forEach((connectionId: string) => {
       const sessionKey = `${SESSION_KEY_PREFIX}${connectionId}`;
       pipeline.hGetAll(sessionKey);
     });
@@ -756,7 +756,7 @@ async function getActiveSessions(appId: string): Promise<SessionData[]> {
     const sessions: SessionData[] = [];
 
     // Map results back to sessions
-    results?.forEach((result) => {
+    results?.forEach((result: unknown) => {
       // Redis pipeline returns various types, need to check if it's an object
       if (result && typeof result === 'object' && !Array.isArray(result)) {
         const sessionData = result as unknown as Record<string, string>;

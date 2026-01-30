@@ -55,6 +55,7 @@ router.post('/api/apps', validateMasterApiKey, async (req: Request, res: Respons
     const app = await prisma.app.create({
       data: {
         name,
+        apiKey,
         apiKeyHash,
       },
     });

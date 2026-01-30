@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Router, Request, Response, NextFunction, IRouter } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
@@ -38,13 +39,20 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
+    const metadata = {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        attributes: user.attributes as Prisma.InputJsonValue | undefined,
+      },
+    } as Prisma.InputJsonValue;
+
     await prisma.conversation.updateMany({
       where: { appId, deviceId },
       data: {
         userId: user.id,
-        metadata: {
-          user,
-        },
+        metadata,
       },
     });
 
