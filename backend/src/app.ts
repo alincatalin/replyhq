@@ -31,6 +31,9 @@ const app: Express = express();
 const publicPath = path.join(process.cwd(), 'public');
 console.log('[Static Files] Serving from:', publicPath);
 
+// Trust proxy for correct client IPs behind Railway/load balancers
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 
