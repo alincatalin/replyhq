@@ -145,7 +145,6 @@ function createRateLimitStore(prefix: string) {
     }
 
     return new RedisStore({
-      // @ts-expect-error - rate-limit-redis types don't match latest redis client
       sendCommand: (...args: any[]) => client.sendCommand(args as any),
       prefix: `rl:${prefix}:`,
     });
