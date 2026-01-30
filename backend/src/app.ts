@@ -46,6 +46,23 @@ app.use(morgan('combined'));
 // Health check (no rate limiting)
 app.use('/health', healthRouter);
 
+// Clean routes for static pages
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+app.get('/dashboard', (_req, res) => {
+  res.sendFile(path.join(publicPath, 'dashboard.html'));
+});
+
+app.get('/index.html', (_req, res) => {
+  res.redirect(302, '/');
+});
+
+app.get('/dashboard.html', (_req, res) => {
+  res.redirect(302, '/dashboard');
+});
+
 // Landing page at root
 app.use('/', express.static(publicPath, {
   index: 'index.html',
