@@ -29,8 +29,12 @@ async function initChat() {
     socket = await initAdminSocket();
 
     if (socket) {
-      // Join conversation room
-      await joinConversation(conversationId);
+      try {
+        // Join conversation room
+        await joinConversation(conversationId);
+      } catch (error) {
+        console.error('[Chat] Failed to join conversation room:', error);
+      }
 
       // Listen for real-time events
       socket.on('message:new', handleNewMessage);
@@ -38,9 +42,21 @@ async function initChat() {
       socket.on('conversation:joined', handleConversationJoined);
     }
 
-    // Load messages
-    await loadMessages();
-    await loadConversations();
+    // Load messages and conversations (do not abort UI on failure)
+    try {
+      await loadMessages();
+    } catch (error) {
+      console.error('[Chat] Error loading messages:', error);
+      showToast(handleApiError(error, 'Failed to load messages'), 'error');
+    }
+
+    try {
+      await loadConversations();
+    } catch (error) {
+      console.error('[Chat] Error loading conversations:', error);
+      showToast(handleApiError(error, 'Failed to load conversations'), 'error');
+    }
+
     setupSearch();
     setupNewConversation();
 
@@ -84,28 +100,23 @@ async function loadMessages() {
 // Load conversations list
 async function loadConversations() {
   try {
-    const data = await apiGet('/admin/api/users');
-    conversations = (data.users || [])
-      .map(user => {
-        const deviceId = Array.isArray(user.device_ids) ? user.device_ids[0] : null;
-        return {
-          id: user.primary_conversation_id,
-          userId: user.user_id,
-          deviceId,
-          status: user.status || 'open',
-          lastMessage: user.last_message ? {
-            body: user.last_message,
-            sender: user.last_sender,
-            createdAt: user.last_message_at
-          } : null,
-          createdAt: user.created_at,
-          updatedAt: user.last_seen_at,
-          isOnline: user.is_online,
-          displayName: user.display_name,
-          deviceContext: {}
-        };
-      })
-      .filter(conversation => Boolean(conversation.id));
+    const data = await apiGet('/admin/api/conversations');
+    conversations = (data.conversations || []).map(item => ({
+      id: item.conversation_id,
+      userId: item.user_id,
+      deviceId: item.device_id,
+      status: item.status,
+      lastMessage: item.last_message ? {
+        body: item.last_message,
+        sender: item.last_sender,
+        createdAt: item.last_message_at
+      } : null,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+      isOnline: item.is_online,
+      displayName: item.display_name,
+      deviceContext: item.device_context || {}
+    }));
 
     renderConversationsList(conversations);
   } catch (error) {

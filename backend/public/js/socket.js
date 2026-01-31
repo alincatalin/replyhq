@@ -31,7 +31,7 @@ async function initAdminSocket() {
   }
 
   adminSocket = io('/admin', {
-    path: '/v1/socket.io',
+    path: '/api/v1/socket.io',
     auth: {
       app_id: appId,
       admin_token: token

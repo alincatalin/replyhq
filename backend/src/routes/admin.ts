@@ -218,6 +218,65 @@ router.get('/api/users', requireJWT, requirePermission(Permission.VIEW_USERS), a
   }
 });
 
+router.get('/api/conversations', requireJWT, requirePermission(Permission.VIEW_CONVERSATIONS), async (req, res, next) => {
+  try {
+    const { appId } = req.jwtPayload!;
+
+    const conversations = await prisma.conversation.findMany({
+      where: { appId },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        userId: true,
+        deviceId: true,
+        status: true,
+        updatedAt: true,
+        createdAt: true,
+        metadata: true,
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            body: true,
+            sender: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    const presence = await getConversationPresence(
+      appId,
+      conversations.map((conv) => conv.deviceId)
+    );
+
+    const items = conversations.map((conv) => {
+      const lastMessage = conv.messages[0];
+      const metadata = (conv.metadata ?? {}) as Record<string, unknown>;
+      const deviceContext = (metadata.device_context ?? {}) as Record<string, unknown>;
+
+      return {
+        conversation_id: conv.id,
+        user_id: conv.userId,
+        device_id: conv.deviceId,
+        status: conv.status,
+        updated_at: conv.updatedAt.toISOString(),
+        created_at: conv.createdAt.toISOString(),
+        device_context: deviceContext,
+        last_message: lastMessage?.body ? sanitizeHtml(lastMessage.body) : null,
+        last_sender: lastMessage?.sender ?? null,
+        last_message_at: lastMessage?.createdAt.toISOString() ?? null,
+        is_online: presence.get(conv.deviceId) ?? false,
+        display_name: conv.userId ? `User ${conv.userId}` : `Visitor ${conv.deviceId.slice(0, 6)}`,
+      };
+    });
+
+    res.json({ conversations: items });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/api/users/:userKey', requireJWT, requirePermission(Permission.VIEW_USERS), async (req, res, next) => {
   try {
     const { appId } = req.jwtPayload!;

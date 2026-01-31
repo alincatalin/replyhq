@@ -67,32 +67,27 @@ async function loadConversations() {
   try {
     showLoadingOverlay();
 
-    const data = await apiGet('/admin/api/users');
-    // API returns { users: [...] } with snake_case fields
-    conversations = (data.users || [])
-      .map(user => {
-        const deviceId = Array.isArray(user.device_ids) ? user.device_ids[0] : null;
-        return {
-          id: user.primary_conversation_id,
-          userId: user.user_id,
-          deviceId,
-          visitorId: deviceId || user.user_id,
-          status: user.status || 'open',
-          metadata: {
-            userName: user.display_name,
-            device: {}
-          },
-          lastMessage: user.last_message ? {
-            body: user.last_message,
-            sender: user.last_sender,
-            createdAt: user.last_message_at
-          } : null,
-          createdAt: user.created_at,
-          updatedAt: user.last_seen_at,
-          isOnline: user.is_online
-        };
-      })
-      .filter(conversation => Boolean(conversation.id));
+    const data = await apiGet('/admin/api/conversations');
+    // API returns { conversations: [...] } with snake_case fields
+    conversations = (data.conversations || []).map(item => ({
+      id: item.conversation_id,
+      userId: item.user_id,
+      deviceId: item.device_id,
+      visitorId: item.device_id,
+      status: item.status,
+      metadata: {
+        userName: item.display_name,
+        device: item.device_context || {}
+      },
+      lastMessage: item.last_message ? {
+        body: item.last_message,
+        sender: item.last_sender,
+        createdAt: item.last_message_at
+      } : null,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+      isOnline: item.is_online
+    }));
 
     renderConversations(conversations);
 
