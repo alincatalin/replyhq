@@ -5,6 +5,7 @@ import dev.replyhq.sdk.data.local.SdkPreferences
 import dev.replyhq.sdk.data.models.Conversation
 import dev.replyhq.sdk.data.models.DeviceContext
 import dev.replyhq.sdk.data.remote.ChatApi
+import dev.replyhq.sdk.util.DebugLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,7 +41,7 @@ class SessionManager(
     }
     
     suspend fun setUser(user: ChatUser): Result<Conversation> {
-        println("[SessionManager] setUser() called with user: ${user.id}")
+        DebugLogger.log("SessionManager", "setUser() called with user: ${user.id}")
         val previousUserId = preferences.userId
 
         if (previousUserId != null && previousUserId != user.id) {

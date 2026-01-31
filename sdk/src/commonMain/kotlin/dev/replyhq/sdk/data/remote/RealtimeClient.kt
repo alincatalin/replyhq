@@ -1,6 +1,7 @@
 package dev.replyhq.sdk.data.remote
 
 import dev.replyhq.sdk.config.NetworkConfig
+import dev.replyhq.sdk.util.DebugLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
@@ -69,7 +70,7 @@ class RealtimeClient(
     private val outgoingMessages = Channel<String>(Channel.BUFFERED)
 
     private fun logDebug(message: String) {
-        println("[RealtimeClient] $message")
+        DebugLogger.log("RealtimeClient", message)
     }
 
     private fun maskApiKey(value: String): String {

@@ -36,6 +36,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
+import dev.replyhq.sdk.util.DebugLogger
 
 /**
  * Socket.IO client implementation for Kotlin Multiplatform
@@ -84,10 +85,10 @@ class SocketIOClient(
 
         try {
             val url = buildWebSocketUrl()
-            println("[SocketIOClient] Connecting to: $url")
+            DebugLogger.log("SocketIOClient", "Connecting to: $url")
 
             httpClient.webSocket(url) {
-                println("[SocketIOClient] WebSocket connected successfully")
+                DebugLogger.log("SocketIOClient", "WebSocket connected successfully")
                 session = this
 
                 // Send Socket.IO connection packet to /client namespace with auth
@@ -99,7 +100,7 @@ class SocketIOClient(
                 val encodedAuth = Json.encodeToString(JsonObject.serializer(), authData)
                 // Socket.IO CONNECT packet format (inside Engine.IO MESSAGE): 0<namespace>,<auth_json>
                 pendingConnectPacket = "0/client,$encodedAuth"
-                println("[SocketIOClient] Prepared Socket.IO CONNECT packet for /client namespace")
+                DebugLogger.log("SocketIOClient", "Prepared Socket.IO CONNECT packet for /client namespace")
 
                 // Start ping loop
                 pingJob = scope.launch {
@@ -113,23 +114,25 @@ class SocketIOClient(
 
                 // Process incoming messages
                 try {
-                    println("[SocketIOClient] Starting to process incoming frames...")
+                    DebugLogger.log("SocketIOClient", "Starting to process incoming frames...")
                     for (frame in incoming) {
-                        println("[SocketIOClient] Received frame: $frame")
+                        DebugLogger.log("SocketIOClient", "Received frame: $frame")
                         if (frame is Frame.Text) {
                             val text = frame.readText()
-                            println("[SocketIOClient] Received text: $text")
+                            DebugLogger.log("SocketIOClient", "Received text: $text")
                             handleFrame(text)
                         }
                     }
-                    println("[SocketIOClient] Incoming frame loop ended")
+                    DebugLogger.log("SocketIOClient", "Incoming frame loop ended")
                 } catch (e: CancellationException) {
-                    println("[SocketIOClient] Connection cancelled: ${e.message}")
+                    DebugLogger.log("SocketIOClient", "Connection cancelled: ${e.message}")
                 } catch (e: Exception) {
-                    println("[SocketIOClient] Connection error: ${e.message}")
-                    e.printStackTrace()
+                    DebugLogger.log("SocketIOClient", "Connection error: ${e.message}")
+                    if (DebugLogger.isEnabled()) {
+                        e.printStackTrace()
+                    }
                 } finally {
-                    println("[SocketIOClient] WebSocket session closing")
+                    DebugLogger.log("SocketIOClient", "WebSocket session closing")
                     session = null
                     pingJob?.cancel()
                     _connectionState.value = SocketIOConnectionState.DISCONNECTED
@@ -137,8 +140,10 @@ class SocketIOClient(
                 }
             }
         } catch (e: Exception) {
-            println("[SocketIOClient] Connection failed: ${e.message}")
-            e.printStackTrace()
+            DebugLogger.log("SocketIOClient", "Connection failed: ${e.message}")
+            if (DebugLogger.isEnabled()) {
+                e.printStackTrace()
+            }
             _connectionState.value = SocketIOConnectionState.DISCONNECTED
             _events.emit(SocketIOEvent.Disconnected)
             throw e
@@ -175,7 +180,7 @@ class SocketIOClient(
                     // Engine OPEN - receive server config
                     pendingConnectPacket?.let { connectPacket ->
                         session?.send(Frame.Text("4$connectPacket"))
-                        println("[SocketIOClient] Sent Socket.IO CONNECT packet after Engine OPEN")
+                        DebugLogger.log("SocketIOClient", "Sent Socket.IO CONNECT packet after Engine OPEN")
                         pendingConnectPacket = null
                     }
                 }
@@ -237,7 +242,7 @@ class SocketIOClient(
                     code = "CONNECT_ERROR",
                     message = packet.data?.toString()
                 )
-                println("[SocketIOClient] CONNECT_ERROR: ${error.message ?: ""}")
+                DebugLogger.log("SocketIOClient", "CONNECT_ERROR: ${error.message ?: ""}")
                 _events.emit(error)
             }
 
@@ -473,8 +478,8 @@ class SocketIOClient(
             append("transport", "websocket")
         }
         val finalUrl = urlBuilder.buildString()
-        println("[SocketIOClient] Base URL: $baseUrl")
-        println("[SocketIOClient] Final Socket.IO URL: $finalUrl")
+        DebugLogger.log("SocketIOClient", "Base URL: $baseUrl")
+        DebugLogger.log("SocketIOClient", "Final Socket.IO URL: $finalUrl")
         return finalUrl
     }
 }

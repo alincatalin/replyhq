@@ -4,6 +4,7 @@ import dev.replyhq.sdk.data.remote.SocketIOClient
 import dev.replyhq.sdk.data.remote.SocketIOConnectionState
 import dev.replyhq.sdk.data.remote.SocketIOEvent
 import dev.replyhq.sdk.platform.Connectivity
+import dev.replyhq.sdk.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -49,7 +50,7 @@ class ConnectionManager(
     private var activeConversationId: String? = null
 
     private fun logDebug(message: String) {
-        println("[ConnectionManager] $message")
+        DebugLogger.log("ConnectionManager", message)
     }
 
     fun connect() {
@@ -141,7 +142,7 @@ class ConnectionManager(
     }
 
     private fun doConnect() {
-        println("[ConnectionManager] doConnect() called, isPaused=$isPaused")
+        logDebug("doConnect() called, isPaused=$isPaused")
         if (isPaused) return
         if (connectionJob?.isActive == true) {
             return
@@ -152,7 +153,7 @@ class ConnectionManager(
 
         connectionJob?.cancel()
         connectionJob = scope.launch {
-            println("[ConnectionManager] About to call socketClient.connect()")
+            logDebug("About to call socketClient.connect()")
             val stateJob = launch {
                 var hasStarted = false
                 socketClient.connectionState.collect { ioState ->
@@ -195,7 +196,7 @@ class ConnectionManager(
             }
             try {
                 socketClient.connect()
-                println("[ConnectionManager] socketClient.connect() returned successfully")
+                logDebug("socketClient.connect() returned successfully")
             } catch (e: Exception) {
                 if (!isPaused) {
                     logDebug("doConnect() failed: ${e.message}; scheduling reconnect")

@@ -11,6 +11,7 @@ import dev.replyhq.sdk.data.models.Message
 import dev.replyhq.sdk.data.remote.AgentTypingEvent
 import dev.replyhq.sdk.data.remote.PushTokenManager
 import dev.replyhq.sdk.data.remote.PushNotificationHandler
+import dev.replyhq.sdk.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -93,6 +94,10 @@ object ChatSDK {
         
         pushTokenManager?.start()
         _isInitialized.value = true
+    }
+
+    fun setDebugLogging(enabled: Boolean) {
+        DebugLogger.setEnabled(enabled)
     }
     
     suspend fun setUser(user: ChatUser): Result<Conversation> {

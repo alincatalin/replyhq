@@ -31,6 +31,10 @@ public enum ReplyHQChatSDK {
         bridge.reset()
     }
 
+    public static func setDebugLogging(_ enabled: Bool) {
+        bridge.setDebugLogging(enabled: enabled)
+    }
+
     public static func handlePush(payload: [String: String], showNotification: Bool = true) {
         bridge.handlePush(payload: payload, showNotification: showNotification)
     }

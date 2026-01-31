@@ -5,11 +5,13 @@ import dev.replyhq.sdk.config.NetworkConfig
 import dev.replyhq.sdk.data.models.Conversation
 import dev.replyhq.sdk.data.models.DeviceContext
 import dev.replyhq.sdk.data.models.Message
+import dev.replyhq.sdk.util.DebugLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -60,6 +62,11 @@ class ChatApi(
         }
         install(Logging) {
             level = LogLevel.HEADERS
+            logger = object : Logger {
+                override fun log(message: String) {
+                    DebugLogger.log("ChatApi", message)
+                }
+            }
         }
         defaultRequest {
             url(normalizedBaseUrl)
@@ -72,7 +79,7 @@ class ChatApi(
     }
 
     private fun logDebug(message: String) {
-        println("[ChatApi] $message")
+        DebugLogger.log("ChatApi", message)
     }
 
     init {
@@ -266,9 +273,12 @@ class ChatApi(
             return trimmed
         }
         val withoutTrailingSlash = trimmed.removeSuffix("/")
+        if (withoutTrailingSlash.endsWith("/api/v1")) {
+            return withoutTrailingSlash
+        }
         if (withoutTrailingSlash.endsWith("/v1")) {
             return withoutTrailingSlash
         }
-        return "$withoutTrailingSlash/v1"
+        return withoutTrailingSlash
     }
 }

@@ -11,6 +11,7 @@ import dev.replyhq.sdk.data.remote.ChatApi
 import dev.replyhq.sdk.data.remote.MessageNewEvent
 import dev.replyhq.sdk.data.remote.RealtimeEvent
 import dev.replyhq.sdk.data.remote.SocketIOEvent
+import dev.replyhq.sdk.util.DebugLogger
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.CoroutineScope
@@ -262,10 +263,10 @@ class SyncManager(
             }
             is SocketIOEvent.ServerShutdown -> {
                 // Log shutdown event - ConnectionManager handles reconnect
-                println("[SyncManager] Server shutdown: will reconnect after ${event.reconnectDelayMs}ms")
+                DebugLogger.log("SyncManager", "Server shutdown: will reconnect after ${event.reconnectDelayMs}ms")
             }
             is SocketIOEvent.Error -> {
-                println("[SyncManager] Error: ${event.code} - ${event.message}")
+                DebugLogger.log("SyncManager", "Error: ${event.code} - ${event.message}")
             }
             else -> {
                 // Ignore other events

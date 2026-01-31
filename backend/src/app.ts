@@ -122,30 +122,28 @@ app.use('/setup', strictRateLimit, setupRouter);
 
 // Skip header validation for WebSocket upgrade requests (socket.io path)
 // API routes with standard rate limiting
-app.use('/v1', apiRateLimit);
+app.use('/api/v1', apiRateLimit);
 
-app.use('/v1', (req, res, next) => {
+app.use('/api/v1', (req, res, next) => {
   const isUpgrade = Boolean(req.headers.upgrade);
   console.log(`[Express] ${req.method} ${req.url}`, { upgrade: isUpgrade, isSocket: req.url.startsWith('/socket.io') });
-  // Skip middleware for Socket.IO WebSocket upgrade requests
   if (req.url.startsWith('/socket.io') || isUpgrade) {
     return next();
   }
   validateHeaders(req, res, next);
 });
 
-app.use('/v1', (req, res, next) => {
-  // Skip app validation for WebSocket upgrade requests
+app.use('/api/v1', (req, res, next) => {
   if (req.url.startsWith('/socket.io') || Boolean(req.headers.upgrade)) {
     return next();
   }
   validateAppId(req, res, next);
 });
 
-app.use('/v1/conversations', conversationsRouter);
-app.use('/v1/push-token', pushTokenRouter);
-app.use('/v1/events', eventsRouter);
-app.use('/v1/identify', identifyRouter);
+app.use('/api/v1/conversations', conversationsRouter);
+app.use('/api/v1/push-token', pushTokenRouter);
+app.use('/api/v1/events', eventsRouter);
+app.use('/api/v1/identify', identifyRouter);
 
 app.use(errorHandler);
 

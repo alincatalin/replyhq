@@ -37,6 +37,10 @@ class ChatSDKBridge {
         ChatSDK.reset()
     }
 
+    fun setDebugLogging(enabled: Boolean) {
+        ChatSDK.setDebugLogging(enabled)
+    }
+
     fun handlePush(payload: Map<String, String>, showNotification: Boolean = true) {
         ChatSDK.handlePushNotification(payload, showNotification)
     }
