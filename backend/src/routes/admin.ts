@@ -296,6 +296,7 @@ router.get('/api/users/:userKey', requireJWT, requirePermission(Permission.VIEW_
     let createdAt: Date | null = null;
     let lastSeenAt: Date | null = null;
     let isOnline = false;
+    const formatDate = (value?: Date | null): string | null => (value ? value.toISOString() : null);
 
     const normalizedConversations = conversations.map((conv) => {
       const lastMessage = conv.messages[0];
@@ -425,8 +426,8 @@ router.get('/api/users/:userKey', requireJWT, requirePermission(Permission.VIEW_
           created_at: device.createdAt.toISOString(),
           updated_at: device.updatedAt.toISOString(),
         })),
-        created_at: createdAt?.toISOString() ?? null,
-        last_seen_at: lastSeenAt?.toISOString() ?? null,
+        created_at: formatDate(createdAt),
+        last_seen_at: formatDate(lastSeenAt),
         is_online: isOnline,
       },
       conversations: normalizedConversations,
