@@ -238,7 +238,11 @@ class ChatApi(
                 takeFrom(normalizedBaseUrl)
                 appendPathSegments("conversations", conversationId, "messages", "read")
             }
-            setBody(MarkReadRequest(upToMessageId))
+            if (upToMessageId == null) {
+                setBody(emptyMap<String, String>())
+            } else {
+                setBody(MarkReadRequest(upToMessageId))
+            }
         }
         logDebug("POST ${response.request.url} -> ${response.status.value}")
         handleResponse<MessageStatusUpdateResponse>(response).updates.isNotEmpty()

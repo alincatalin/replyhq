@@ -77,7 +77,7 @@ async function main() {
   server.listen(config.port, '0.0.0.0', () => {
     console.log(`Server running on port ${config.port}`);
     console.log(`REST API: http://localhost:${config.port}/v1`);
-    console.log(`Socket.IO: ws://localhost:${config.port}/v1/socket.io`);
+  console.log(`Socket.IO: ws://localhost:${config.port}/api/v1/socket.io`);
     console.log(`Health check: http://localhost:${config.port}/health`);
     console.log(`Accessible from emulator: http://10.0.2.2:${config.port}`);
   });

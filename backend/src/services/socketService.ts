@@ -34,7 +34,7 @@ export async function initSocketIO(server: HTTPServer): Promise<void> {
   console.log('[Socket.IO] Initializing Socket.IO server...');
 
   io = new Server(server, {
-    path: '/v1/socket.io',
+    path: '/api/v1/socket.io',
     cors: {
       origin: '*',
     },
@@ -93,7 +93,7 @@ export async function initSocketIO(server: HTTPServer): Promise<void> {
   // Setup test console namespace for admin dashboard
   initializeTestConsole(io);
 
-  console.log('Socket.IO server initialized on /v1/socket.io');
+  console.log('Socket.IO server initialized on /api/v1/socket.io');
 }
 
 /**
