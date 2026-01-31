@@ -69,25 +69,30 @@ async function loadConversations() {
 
     const data = await apiGet('/admin/api/users');
     // API returns { users: [...] } with snake_case fields
-    conversations = (data.users || []).map(user => ({
-      id: user.conversation_id,
-      userId: user.user_id,
-      deviceId: user.device_id,
-      visitorId: user.device_id, // Use device_id as visitor identifier
-      status: user.status,
-      metadata: {
-        userName: user.display_name,
-        device: user.device_context || {}
-      },
-      lastMessage: user.last_message ? {
-        body: user.last_message,
-        sender: user.last_sender,
-        createdAt: user.last_message_at
-      } : null,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      isOnline: user.is_online
-    }));
+    conversations = (data.users || [])
+      .map(user => {
+        const deviceId = Array.isArray(user.device_ids) ? user.device_ids[0] : null;
+        return {
+          id: user.primary_conversation_id,
+          userId: user.user_id,
+          deviceId,
+          visitorId: deviceId || user.user_id,
+          status: user.status || 'open',
+          metadata: {
+            userName: user.display_name,
+            device: {}
+          },
+          lastMessage: user.last_message ? {
+            body: user.last_message,
+            sender: user.last_sender,
+            createdAt: user.last_message_at
+          } : null,
+          createdAt: user.created_at,
+          updatedAt: user.last_seen_at,
+          isOnline: user.is_online
+        };
+      })
+      .filter(conversation => Boolean(conversation.id));
 
     renderConversations(conversations);
 
@@ -156,7 +161,7 @@ function renderConversationCard(conversation) {
 
   // Generate avatar
   const initials = getInitials(userName);
-  const avatarGradient = getAvatarGradient(visitorId || id);
+  const avatarGradient = getAvatarGradient(visitorId || id || 'replyhq');
 
   // Format last message
   const lastMessageText = lastMessage?.body || 'No messages yet';

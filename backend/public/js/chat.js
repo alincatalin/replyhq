@@ -85,22 +85,27 @@ async function loadMessages() {
 async function loadConversations() {
   try {
     const data = await apiGet('/admin/api/users');
-    conversations = (data.users || []).map(user => ({
-      id: user.conversation_id,
-      userId: user.user_id,
-      deviceId: user.device_id,
-      status: user.status,
-      lastMessage: user.last_message ? {
-        body: user.last_message,
-        sender: user.last_sender,
-        createdAt: user.last_message_at
-      } : null,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      isOnline: user.is_online,
-      displayName: user.display_name,
-      deviceContext: user.device_context || {}
-    }));
+    conversations = (data.users || [])
+      .map(user => {
+        const deviceId = Array.isArray(user.device_ids) ? user.device_ids[0] : null;
+        return {
+          id: user.primary_conversation_id,
+          userId: user.user_id,
+          deviceId,
+          status: user.status || 'open',
+          lastMessage: user.last_message ? {
+            body: user.last_message,
+            sender: user.last_sender,
+            createdAt: user.last_message_at
+          } : null,
+          createdAt: user.created_at,
+          updatedAt: user.last_seen_at,
+          isOnline: user.is_online,
+          displayName: user.display_name,
+          deviceContext: {}
+        };
+      })
+      .filter(conversation => Boolean(conversation.id));
 
     renderConversationsList(conversations);
   } catch (error) {
@@ -126,7 +131,7 @@ function renderConversationsList(conversations) {
   listContainer.innerHTML = conversations.map(conversation => {
     const userName = conversation.displayName || `User ${conversation.deviceId?.substring(0, 6)}`;
     const initials = getInitials(userName);
-    const avatarGradient = getAvatarGradient(conversation.deviceId || conversation.id);
+    const avatarGradient = getAvatarGradient(conversation.deviceId || conversation.id || conversation.userId || 'replyhq');
     const lastMessageText = conversation.lastMessage?.body || 'No messages yet';
     const lastMessageTime = conversation.lastMessage?.createdAt ? formatRelativeTime(conversation.lastMessage.createdAt) : formatRelativeTime(conversation.createdAt);
     const lastMessageSender = conversation.lastMessage?.sender === 'agent' ? 'You: ' : '';

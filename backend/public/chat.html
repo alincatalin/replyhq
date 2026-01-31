@@ -611,63 +611,11 @@
                     <input type="text" class="search-box" placeholder="Search conversations...">
                 </div>
                 <div class="conversations-list">
-                    <div class="conversation-item active">
-                        <div class="conversation-avatar">SK</div>
-                        <div class="conversation-content">
-                            <div class="conversation-header">
-                                <span class="conversation-user">Sarah Kim</span>
-                                <span class="conversation-time">2m</span>
-                            </div>
-                            <div class="conversation-preview">App crashed when trying to export...</div>
-                        </div>
-                    </div>
-
-                    <div class="conversation-item">
-                        <div class="conversation-avatar"
-                            style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">JD</div>
-                        <div class="conversation-content">
-                            <div class="conversation-header">
-                                <span class="conversation-user">John Davis</span>
-                                <span class="conversation-time">15m</span>
-                            </div>
-                            <div class="conversation-preview">How do I enable dark mode?</div>
-                        </div>
-                    </div>
-
-                    <div class="conversation-item">
-                        <div class="conversation-avatar"
-                            style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">ML</div>
-                        <div class="conversation-content">
-                            <div class="conversation-header">
-                                <span class="conversation-user">Maria Lopez</span>
-                                <span class="conversation-time">1h</span>
-                            </div>
-                            <div class="conversation-preview">Loving the new update! Feature...</div>
-                        </div>
-                    </div>
-
-                    <div class="conversation-item">
-                        <div class="conversation-avatar"
-                            style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">TR</div>
-                        <div class="conversation-content">
-                            <div class="conversation-header">
-                                <span class="conversation-user">Tom Roberts</span>
-                                <span class="conversation-time">3h</span>
-                            </div>
-                            <div class="conversation-preview">Can't login with Google account</div>
-                        </div>
-                    </div>
-
-                    <div class="conversation-item">
-                        <div class="conversation-avatar"
-                            style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">AN</div>
-                        <div class="conversation-content">
-                            <div class="conversation-header">
-                                <span class="conversation-user">Alex Newman</span>
-                                <span class="conversation-time">5h</span>
-                            </div>
-                            <div class="conversation-preview">Thanks for the quick response!</div>
-                        </div>
+                    <div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-dim);">
+                        <p>No conversations yet</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+                            Conversations will show up here once users message you
+                        </p>
                     </div>
                 </div>
             </aside>
@@ -676,96 +624,20 @@
             <main class="chat-main">
                 <header class="chat-header">
                     <div class="chat-user-info">
-                        <div class="conversation-avatar">SK</div>
+                        <div class="conversation-avatar">?</div>
                         <div>
-                            <div class="chat-user-name">Sarah Kim</div>
-                            <div class="chat-user-meta">iPhone 15 Pro • iOS 17.2 • App v2.4.1</div>
+                            <div class="chat-user-name">Select a conversation</div>
+                            <div class="chat-user-meta">Choose a message thread from the left</div>
                         </div>
                     </div>
-                    <button class="btn">View Profile</button>
                 </header>
 
                 <div class="messages-area">
-                    <!-- User Message -->
-                    <div class="message user">
-                        <div class="message-avatar">SK</div>
-                        <div class="message-content">
-                            <div class="message-sender">
-                                Sarah Kim
-                                <span class="message-time">Today at 2:45 PM</span>
-                            </div>
-                            <div class="message-bubble">
-                                <div class="message-text">App crashed when trying to export data. Here's what happened:
-                                </div>
-                                <div class="message-attachment">
-                                    <svg width="100%" height="200" viewBox="0 0 400 200" style="background: #1a1a1a;">
-                                        <rect x="20" y="20" width="360" height="160" fill="#2a2a2a" stroke="#DC2626"
-                                            stroke-width="2" rx="8" />
-                                        <text x="200" y="100" fill="#DC2626" font-family="Plus Jakarta Sans"
-                                            font-size="16" text-anchor="middle">Screenshot: Export Error</text>
-                                        <circle cx="80" cy="80" r="20" stroke="#DC2626" stroke-width="3" fill="none" />
-                                        <text x="80" y="120" fill="#888" font-size="12" text-anchor="middle">← User
-                                            circled this</text>
-                                    </svg>
-                                </div>
-                                <div class="context-data">
-                                    <div class="context-row">
-                                        <span class="context-label">Device:</span>
-                                        <span class="context-value">iPhone 15 Pro</span>
-                                    </div>
-                                    <div class="context-row">
-                                        <span class="context-label">OS:</span>
-                                        <span class="context-value">iOS 17.2</span>
-                                    </div>
-                                    <div class="context-row">
-                                        <span class="context-label">Battery:</span>
-                                        <span class="context-value">12%</span>
-                                    </div>
-                                    <div class="context-row">
-                                        <span class="context-label">Breadcrumbs:</span>
-                                    </div>
-                                    <div style="margin-left: 1rem; color: var(--text-dim); font-size: 0.7rem;">
-                                        → View: Settings<br>
-                                        → Tap: Export_PDF<br>
-                                        → Error: Memory_Limit
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Agent Message -->
-                    <div class="message agent">
-                        <div class="message-avatar">A</div>
-                        <div class="message-content">
-                            <div class="message-sender">
-                                You
-                                <span class="message-time">Today at 2:47 PM</span>
-                            </div>
-                            <div class="message-bubble">
-                                <div class="message-text">
-                                    Thanks for the report, Sarah! I can see the issue - it looks like the export failed
-                                    due to memory constraints when your battery was low.
-                                    <br><br>
-                                    We've just pushed a fix in v2.4.2 that optimizes memory usage during exports. Can
-                                    you update and try again?
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- User Response -->
-                    <div class="message user">
-                        <div class="message-avatar">SK</div>
-                        <div class="message-content">
-                            <div class="message-sender">
-                                Sarah Kim
-                                <span class="message-time">Today at 2:50 PM</span>
-                            </div>
-                            <div class="message-bubble">
-                                <div class="message-text">That was fast! Updating now...</div>
-                            </div>
-                        </div>
+                    <div style="text-align: center; padding: 3rem; color: var(--text-dim);">
+                        <p>No conversation selected</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+                            Pick a conversation or start a new one
+                        </p>
                     </div>
                 </div>
 
