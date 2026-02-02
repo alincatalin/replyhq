@@ -138,7 +138,10 @@ router.post('/:id/messages/read', async (req: Request, res: Response, next: Next
       throw new ApiError(404, 'Conversation not found', 'CONVERSATION_NOT_FOUND');
     }
 
-    const updates = await markMessagesRead(req.params.id, parseResult.data.up_to_message_id);
+    const updates = await markMessagesRead(
+      req.params.id,
+      parseResult.data.up_to_message_id ?? undefined
+    );
     res.json({ updates });
   } catch (error) {
     next(error);
