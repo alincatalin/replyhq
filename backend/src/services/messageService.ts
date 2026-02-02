@@ -3,7 +3,7 @@ import { generateMessageId } from '../utils/ids.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { config } from '../config/index.js';
 import type { CreateMessageInput } from '../schemas/message.js';
-import { broadcastToConversation } from './socketService.js';
+import { broadcastToApp, broadcastToConversation } from './socketService.js';
 import { getConversationForDevice } from './conversationService.js';
 import { sendPushNotification } from './pushNotificationService.js';
 import { dispatchWebhook } from './webhookDispatchService.js';
@@ -62,6 +62,7 @@ export async function createMessage(
     const isNewMessage = message.id === messageId;
     if (isNewMessage) {
       broadcastToConversation(conversationId, 'message:new', formattedMessage);
+      broadcastToApp(appId, 'message:new', formattedMessage);
 
       if (sender !== 'user') {
         void sendPushNotification(conversation.deviceId, {

@@ -787,6 +787,10 @@ export function broadcastToConversation(conversationId: string, event: string, d
   adminNs.to(`conversation:${conversationId}`).emit(event, data);
 }
 
+export function broadcastToApp(appId: string, event: string, data: any): void {
+  adminNs.to(`app:${appId}`).emit(event, data);
+}
+
 /**
  * Broadcast agent typing event
  */

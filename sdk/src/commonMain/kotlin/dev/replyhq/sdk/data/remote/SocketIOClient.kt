@@ -28,6 +28,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
@@ -330,7 +331,11 @@ class SocketIOClient(
         } ?: return
 
         try {
-            val responseData = (packet.data as? JsonObject)
+            val responseData = when (val data = packet.data) {
+                is JsonObject -> data
+                is JsonArray -> data.firstOrNull()?.jsonObject
+                else -> null
+            }
             deferred.complete(responseData)
         } catch (e: Exception) {
             deferred.completeExceptionally(e)

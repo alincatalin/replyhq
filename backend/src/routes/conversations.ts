@@ -77,7 +77,7 @@ const deliveredSchema = z.object({
 });
 
 const readSchema = z.object({
-  up_to_message_id: z.string().min(1).optional(),
+  up_to_message_id: z.string().min(1).nullable().optional(),
 });
 
 router.post('/:id/messages/status', async (req: Request, res: Response, next: NextFunction) => {
